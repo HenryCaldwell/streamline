@@ -12,6 +12,7 @@ import info.henrycaldwell.aggregator.config.Spec;
 import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
+import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.util.MapUtils;
 
 /**
@@ -24,9 +25,11 @@ public final class YtDlpDownloader extends AbstractDownloader {
 
   public static final Spec SPEC = Spec.builder()
       .requiredString("ytDlpPath")
+      .optionalNumber("timeout")
       .build();
 
   private final String ytDlpPath;
+  private final long timeout;
 
   /**
    * Constructs a YtDlpDownloader.
@@ -37,6 +40,13 @@ public final class YtDlpDownloader extends AbstractDownloader {
     super(config, SPEC);
 
     this.ytDlpPath = config.getString("ytDlpPath");
+
+    long timeout = config.hasPath("timeout") ? config.getNumber("timeout").longValue() : 180L;
+    if (timeout <= 0) {
+      throw new SpecException(name, "Invalid key value (expected timeout to be greater than 0)",
+          MapUtils.ofNullable("key", "timeout", "value", timeout));
+    }
+    this.timeout = timeout;
   }
 
   /**
@@ -86,7 +96,7 @@ public final class YtDlpDownloader extends AbstractDownloader {
 
     boolean complete;
     try {
-      complete = process.waitFor(10, TimeUnit.MINUTES);
+      complete = process.waitFor(timeout, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       process.destroyForcibly();
@@ -97,7 +107,7 @@ public final class YtDlpDownloader extends AbstractDownloader {
     if (!complete) {
       process.destroyForcibly();
       throw new ComponentException(name, "Timed out while waiting for yt-dlp process",
-          MapUtils.ofNullable("clipId", clip.id()));
+          MapUtils.ofNullable("clipId", clip.id(), "timeout", timeout));
     }
 
     int code = process.exitValue();
