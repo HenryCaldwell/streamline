@@ -244,6 +244,26 @@ public class FFmpegTransformerTest {
     }
 
     @Test
+    void throwsWhenProcessFailsToStart() {
+      Path source = tempDir.resolve("source.mp4");
+      Path target = tempDir.resolve("target.mp4");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = test
+          ffmpegPath = ffmpeg
+          """);
+      TestFFmpegTransformer transformer = new TestFFmpegTransformer(config);
+
+      ComponentException exception = assertThrows(ComponentException.class,
+          () -> transformer.callRunProcess(new ProcessBuilder("/this/does/not/exist"), media, source, target));
+
+      assertTrue(exception.getMessage().contains("Failed to start ffmpeg process"));
+      assertTrue(exception.getMessage().contains("clipId=clip-1"));
+    }
+
+    @Test
     void throwsWhenProcessExitsWithNonZeroCode() {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
