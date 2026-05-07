@@ -35,6 +35,7 @@ public final class InstagramPublisher extends AbstractPublisher {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final HttpClient http;
+  private final HttpSender sender;
 
   private final String accountId;
   private final String accessKey;
@@ -50,6 +51,18 @@ public final class InstagramPublisher extends AbstractPublisher {
    * @param config A {@link Config} representing the publisher configuration.
    */
   public InstagramPublisher(Config config) {
+    this(config, null);
+  }
+
+  /**
+   * Constructs an InstagramPublisher with a custom HTTP sender for testing.
+   *
+   * @param config A {@link Config} representing the publisher configuration.
+   * @param sender An {@link HttpSender} for dispatching requests, or {@code null}
+   *               to use the default Instagram HTTP client.
+   * @throws SpecException if the configuration violates the publisher spec.
+   */
+  InstagramPublisher(Config config, HttpSender sender) {
     super(config, SPEC);
 
     this.http = HttpClient.newHttpClient();
@@ -70,6 +83,8 @@ public final class InstagramPublisher extends AbstractPublisher {
           MapUtils.ofNullable("key", "interval", "value", interval));
     }
     this.interval = interval;
+
+    this.sender = sender != null ? sender : this::defaultSend;
   }
 
   /**
@@ -127,7 +142,7 @@ public final class InstagramPublisher extends AbstractPublisher {
         .POST(HttpRequest.BodyPublishers.ofString(root.toString()))
         .build();
 
-    String json = send(request);
+    String json = sender.send(request);
 
     String id;
     try {
@@ -165,7 +180,7 @@ public final class InstagramPublisher extends AbstractPublisher {
           .GET()
           .build();
 
-      String json = send(request);
+      String json = sender.send(request);
 
       String status;
       String error;
@@ -226,7 +241,7 @@ public final class InstagramPublisher extends AbstractPublisher {
         .POST(HttpRequest.BodyPublishers.ofString(root.toString()))
         .build();
 
-    String json = send(request);
+    String json = sender.send(request);
 
     String id;
     try {
@@ -261,7 +276,7 @@ public final class InstagramPublisher extends AbstractPublisher {
         .GET()
         .build();
 
-    String json = send(request);
+    String json = sender.send(request);
 
     String permalink;
     try {
@@ -277,40 +292,6 @@ public final class InstagramPublisher extends AbstractPublisher {
     }
 
     return permalink;
-  }
-
-  /**
-   * Sends an HTTP request and returns the response body as a string.
-   *
-   * @param request A {@link HttpRequest} representing the request to send.
-   * @return A string representing the response body.
-   * @throws ComponentException if the request fails or returns a non-2xx status
-   *                            code.
-   */
-  private String send(HttpRequest request) {
-    URI uri = request.uri();
-    String method = request.method();
-
-    HttpResponse<String> response;
-    try {
-      response = http.send(request, HttpResponse.BodyHandlers.ofString());
-    } catch (IOException e) {
-      throw new ComponentException(name, "Failed to call Instagram Graph API",
-          MapUtils.ofNullable("method", method, "uri", uri.toString()), e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ComponentException(name, "Interrupted while calling Instagram Graph API",
-          MapUtils.ofNullable("method", method, "uri", uri.toString()), e);
-    }
-
-    int status = response.statusCode();
-    String body = response.body();
-    if (status < 200 || status >= 300) {
-      throw new ComponentException(name, "Instagram Graph API returned non-2xx status",
-          MapUtils.ofNullable("method", method, "uri", uri.toString(), "statusCode", status, "responseBody", body));
-    }
-
-    return body;
   }
 
   /**
@@ -351,5 +332,39 @@ public final class InstagramPublisher extends AbstractPublisher {
     }
 
     return sb.toString();
+  }
+
+  /**
+   * Sends an HTTP request using the default Instagram HTTP client.
+   *
+   * @param request A {@link HttpRequest} representing the request to send.
+   * @return A string representing the response body.
+   * @throws ComponentException if the request fails or returns a non-2xx status
+   *                            code.
+   */
+  private String defaultSend(HttpRequest request) {
+    URI uri = request.uri();
+    String method = request.method();
+
+    HttpResponse<String> response;
+    try {
+      response = http.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (IOException e) {
+      throw new ComponentException(name, "Failed to call Instagram Graph API",
+          MapUtils.ofNullable("method", method, "uri", uri.toString()), e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ComponentException(name, "Interrupted while calling Instagram Graph API",
+          MapUtils.ofNullable("method", method, "uri", uri.toString()), e);
+    }
+
+    int status = response.statusCode();
+    String body = response.body();
+    if (status < 200 || status >= 300) {
+      throw new ComponentException(name, "Instagram Graph API returned non-2xx status",
+          MapUtils.ofNullable("method", method, "uri", uri.toString(), "statusCode", status, "responseBody", body));
+    }
+
+    return body;
   }
 }
