@@ -15,6 +15,7 @@ import info.henrycaldwell.aggregator.config.Spec;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.core.PublishRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
+import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.util.MapUtils;
 
 /**
@@ -28,6 +29,7 @@ public final class InstagramPublisher extends AbstractPublisher {
   public static final Spec SPEC = Spec.builder()
       .requiredString("accountId", "accessKey")
       .optionalString("captionText")
+      .optionalNumber("timeout", "interval")
       .build();
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -38,6 +40,9 @@ public final class InstagramPublisher extends AbstractPublisher {
   private final String accessKey;
 
   private final String captionText;
+
+  private final long timeout;
+  private final long interval;
 
   /**
    * Constructs an InstagramPublisher.
@@ -51,6 +56,20 @@ public final class InstagramPublisher extends AbstractPublisher {
     this.accountId = config.getString("accountId");
     this.accessKey = config.getString("accessKey");
     this.captionText = config.hasPath("captionText") ? config.getString("captionText") : null;
+
+    long timeout = config.hasPath("timeout") ? config.getNumber("timeout").longValue() : 180L;
+    if (timeout <= 0) {
+      throw new SpecException(name, "Invalid key value (expected timeout to be greater than 0)",
+          MapUtils.ofNullable("key", "timeout", "value", timeout));
+    }
+    this.timeout = timeout;
+
+    long interval = config.hasPath("interval") ? config.getNumber("interval").longValue() : 30L;
+    if (interval <= 0) {
+      throw new SpecException(name, "Invalid key value (expected interval to be greater than 0)",
+          MapUtils.ofNullable("key", "interval", "value", interval));
+    }
+    this.interval = interval;
   }
 
   /**
@@ -134,11 +153,11 @@ public final class InstagramPublisher extends AbstractPublisher {
    *                            timeout or enters an error state.
    */
   private void awaitContainer(String containerId) {
-    long timeout = TimeUnit.MINUTES.toNanos(5);
     long start = System.nanoTime();
 
-    while (System.nanoTime() - start < timeout) {
-      URI endpoint = URI.create("https://graph.instagram.com/v23.0/" + containerId + "?fields=status_code,error_message");
+    while (System.nanoTime() - start < TimeUnit.SECONDS.toNanos(timeout)) {
+      URI endpoint = URI
+          .create("https://graph.instagram.com/v23.0/" + containerId + "?fields=status_code,error_message");
 
       HttpRequest request = HttpRequest.newBuilder()
           .uri(endpoint)
@@ -174,7 +193,7 @@ public final class InstagramPublisher extends AbstractPublisher {
       }
 
       try {
-        Thread.sleep(30000L);
+        Thread.sleep(TimeUnit.SECONDS.toMillis(interval));
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new ComponentException(name, "Interrupted while waiting for Instagram media container",
