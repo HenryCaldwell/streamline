@@ -17,7 +17,7 @@ import info.henrycaldwell.aggregator.util.MapUtils;
 
 /**
  * Class for downloading clips via the yt-dlp command-line extractor.
- * 
+ *
  * This class invokes yt-dlp as a subprocess and writes the resulting media
  * file.
  */
@@ -29,7 +29,10 @@ public final class YtDlpDownloader extends AbstractDownloader {
       .build();
 
   private final String ytDlpPath;
+
   private final long timeout;
+
+  private final ProcessFactory factory;
 
   /**
    * Constructs a YtDlpDownloader.
@@ -37,6 +40,17 @@ public final class YtDlpDownloader extends AbstractDownloader {
    * @param config A {@link Config} representing the downloader configuration.
    */
   public YtDlpDownloader(Config config) {
+    this(config, null);
+  }
+
+  /**
+   * Constructs a YtDlpDownloader with a custom process factory for testing.
+   *
+   * @param config  A {@link Config} representing the downloader configuration.
+   * @param factory A {@link ProcessFactory} for creating the download subprocess,
+   *                or {@code null} to use the default yt-dlp command.
+   */
+  YtDlpDownloader(Config config, ProcessFactory factory) {
     super(config, SPEC);
 
     this.ytDlpPath = config.getString("ytDlpPath");
@@ -47,6 +61,8 @@ public final class YtDlpDownloader extends AbstractDownloader {
           MapUtils.ofNullable("key", "timeout", "value", timeout));
     }
     this.timeout = timeout;
+
+    this.factory = factory != null ? factory : this::defaultCreate;
   }
 
   /**
@@ -54,8 +70,8 @@ public final class YtDlpDownloader extends AbstractDownloader {
    *
    * @param clip   A {@link ClipRef} representing the clip to download.
    * @param target A {@link Path} representing the media destination.
-   * @return @return A {@link MediaRef} representing the downloaded media.
-   * @throws ComponentException if the download fails at any step.
+   * @return A {@link MediaRef} representing the downloaded media.
+   * @throws ComponentException if downloading fails at any step.
    */
   @Override
   public MediaRef download(ClipRef clip, Path target) {
@@ -81,12 +97,7 @@ public final class YtDlpDownloader extends AbstractDownloader {
 
     Process process;
     try {
-      ProcessBuilder pb = new ProcessBuilder(
-          ytDlpPath,
-          clip.url(),
-          "--restrict-filenames",
-          "--windows-filenames",
-          "-o", target.toString());
+      ProcessBuilder pb = factory.create(clip, target);
       pb.redirectErrorStream(true);
       process = pb.start();
     } catch (IOException e) {
@@ -117,7 +128,8 @@ public final class YtDlpDownloader extends AbstractDownloader {
     }
 
     if (!Files.exists(target)) {
-      throw new ComponentException(name, "Output file missing after download", MapUtils.ofNullable("targetPath", target));
+      throw new ComponentException(name, "Output file missing after download",
+          MapUtils.ofNullable("targetPath", target));
     }
 
     try {
@@ -139,5 +151,21 @@ public final class YtDlpDownloader extends AbstractDownloader {
         clip.broadcaster(),
         clip.language(),
         clip.tags() != null ? List.copyOf(clip.tags()) : null);
+  }
+
+  /**
+   * Creates the download subprocess using the default yt-dlp command.
+   *
+   * @param clip   A {@link ClipRef} representing the clip to download.
+   * @param target A {@link Path} representing the media destination.
+   * @return A {@link ProcessBuilder} configured to invoke yt-dlp.
+   */
+  private ProcessBuilder defaultCreate(ClipRef clip, Path target) {
+    return new ProcessBuilder(
+        ytDlpPath,
+        clip.url(),
+        "--restrict-filenames",
+        "--windows-filenames",
+        "-o", target.toString());
   }
 }
