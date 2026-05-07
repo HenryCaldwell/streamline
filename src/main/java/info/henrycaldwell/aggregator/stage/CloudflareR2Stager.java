@@ -33,6 +33,7 @@ public final class CloudflareR2Stager extends AbstractStager {
       .build();
 
   private S3Client s3;
+  private S3Operations operations;
 
   private final String accountId;
   private final String accessKey;
@@ -49,6 +50,17 @@ public final class CloudflareR2Stager extends AbstractStager {
    * @param config A {@link Config} representing the stager configuration.
    */
   public CloudflareR2Stager(Config config) {
+    this(config, null);
+  }
+
+  /**
+   * Constructs a CloudflareR2Stager with a custom S3 operations for testing.
+   *
+   * @param config     A {@link Config} representing the stager configuration.
+   * @param operations An {@link S3Operations} for dispatching requests, or
+   *                   {@code null} to use the default Cloudflare R2 S3 client.
+   */
+  CloudflareR2Stager(Config config, S3Operations operations) {
     super(config, SPEC);
 
     this.accountId = config.getString("accountId");
@@ -60,6 +72,7 @@ public final class CloudflareR2Stager extends AbstractStager {
     this.endpoint = config.hasPath("endpoint")
         ? config.getString("endpoint")
         : "https://" + accountId + ".r2.cloudflarestorage.com";
+    this.operations = operations;
   }
 
   /**
@@ -67,7 +80,7 @@ public final class CloudflareR2Stager extends AbstractStager {
    */
   @Override
   public void start() {
-    if (s3 != null) {
+    if (operations != null || s3 != null) {
       return;
     }
 
@@ -84,6 +97,18 @@ public final class CloudflareR2Stager extends AbstractStager {
         .region(Region.of(region))
         .serviceConfiguration(configuration)
         .build();
+
+    operations = new S3Operations() {
+      @Override
+      public void putObject(PutObjectRequest request, RequestBody body) {
+        s3.putObject(request, body);
+      }
+
+      @Override
+      public void deleteObject(DeleteObjectRequest request) {
+        s3.deleteObject(request);
+      }
+    };
   }
 
   /**
@@ -93,8 +118,10 @@ public final class CloudflareR2Stager extends AbstractStager {
   public void stop() {
     if (s3 != null) {
       s3.close();
-      s3 = null;
     }
+
+    s3 = null;
+    operations = null;
   }
 
   /**
@@ -106,14 +133,15 @@ public final class CloudflareR2Stager extends AbstractStager {
    */
   @Override
   public MediaRef apply(MediaRef media) {
-    if (s3 == null) {
+    if (operations == null) {
       throw new ComponentException(name, "Stager not started");
     }
 
     Path src = media.file();
 
     if (src == null || !Files.isRegularFile(src)) {
-      throw new ComponentException(name, "Input file missing or not a regular file", MapUtils.ofNullable("sourcePath", src));
+      throw new ComponentException(name, "Input file missing or not a regular file",
+          MapUtils.ofNullable("sourcePath", src));
     }
 
     String key = src.getFileName().toString();
@@ -125,7 +153,7 @@ public final class CloudflareR2Stager extends AbstractStager {
           .contentType("video/mp4")
           .build();
 
-      s3.putObject(request, RequestBody.fromFile(src));
+      operations.putObject(request, RequestBody.fromFile(src));
     } catch (Exception e) {
       throw new ComponentException(name, "Failed to upload object to R2",
           MapUtils.ofNullable("bucket", bucket, "objectKey", key, "sourcePath", src), e);
@@ -144,7 +172,7 @@ public final class CloudflareR2Stager extends AbstractStager {
    */
   @Override
   public void clean(MediaRef media) {
-    if (s3 == null) {
+    if (operations == null) {
       throw new ComponentException(name, "Stager not started");
     }
 
@@ -170,7 +198,7 @@ public final class CloudflareR2Stager extends AbstractStager {
           .key(key)
           .build();
 
-      s3.deleteObject(request);
+      operations.deleteObject(request);
     } catch (Exception e) {
       throw new ComponentException(name, "Failed to delete object from R2",
           MapUtils.ofNullable("bucket", bucket, "objectKey", key, "uri", uri.toString()), e);
