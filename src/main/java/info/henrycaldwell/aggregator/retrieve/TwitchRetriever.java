@@ -39,6 +39,7 @@ public final class TwitchRetriever extends AbstractRetriever {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final HttpClient http;
+  private final HttpSender sender;
 
   private final String clientId;
   private final String token;
@@ -59,6 +60,17 @@ public final class TwitchRetriever extends AbstractRetriever {
    * @throws SpecException if the configuration violates the retriever spec.
    */
   public TwitchRetriever(Config config) {
+    this(config, null);
+  }
+
+  /**
+   * Constructs a TwitchRetriever with a custom HTTP sender for testing.
+   *
+   * @param config A {@link Config} representing the retriever configuration.
+   * @param sender An {@link HttpSender} for dispatching requests, or {@code null}
+   *               to use the default Twitch Helix HTTP client.
+   */
+  TwitchRetriever(Config config, HttpSender sender) {
     super(config, SPEC);
 
     this.clientId = config.getString("clientId");
@@ -112,6 +124,7 @@ public final class TwitchRetriever extends AbstractRetriever {
     }
 
     this.http = HttpClient.newHttpClient();
+    this.sender = sender != null ? sender : this::defaultSend;
   }
 
   /**
@@ -173,7 +186,7 @@ public final class TwitchRetriever extends AbstractRetriever {
           .GET()
           .build();
 
-      String json = send(request);
+      String json = sender.send(request);
 
       JsonNode root;
       try {
@@ -221,14 +234,14 @@ public final class TwitchRetriever extends AbstractRetriever {
   }
 
   /**
-   * Sends an HTTP request and returns the response body as a string.
+   * Sends an HTTP request using the default Twitch HTTP client.
    *
    * @param request A {@link HttpRequest} representing the request to send.
    * @return A string representing the response body.
    * @throws ComponentException if the request fails or returns a non-2xx status
    *                            code.
    */
-  private String send(HttpRequest request) {
+  private String defaultSend(HttpRequest request) {
     URI uri = request.uri();
     String method = request.method();
 
