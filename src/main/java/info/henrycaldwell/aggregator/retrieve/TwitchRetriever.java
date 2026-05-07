@@ -1,21 +1,25 @@
 package info.henrycaldwell.aggregator.retrieve;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import com.github.twitch4j.TwitchClient;
-import com.github.twitch4j.TwitchClientBuilder;
-import com.github.twitch4j.helix.domain.Clip;
-import com.github.twitch4j.helix.domain.ClipList;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 
 import info.henrycaldwell.aggregator.config.Spec;
 import info.henrycaldwell.aggregator.core.ClipRef;
-import info.henrycaldwell.aggregator.util.MapUtils;
+import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
+import info.henrycaldwell.aggregator.util.MapUtils;
 
 /**
  * Class for retrieving clips via the Twitch Helix API.
@@ -26,14 +30,17 @@ import info.henrycaldwell.aggregator.error.SpecException;
 public final class TwitchRetriever extends AbstractRetriever {
 
   public static final Spec SPEC = Spec.builder()
-      .requiredString("token")
+      .requiredString("clientId", "token")
       .optionalString("gameId", "broadcasterId")
       .optionalNumber("window", "limit")
       .optionalStringList("languages", "tags")
       .build();
 
-  private final TwitchClient twitch;
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
+  private final HttpClient http;
+
+  private final String clientId;
   private final String token;
 
   private final String gameId;
@@ -54,6 +61,7 @@ public final class TwitchRetriever extends AbstractRetriever {
   public TwitchRetriever(Config config) {
     super(config, SPEC);
 
+    this.clientId = config.getString("clientId");
     this.token = config.getString("token");
     this.gameId = config.hasPath("gameId") ? config.getString("gameId") : null;
     this.broadcasterId = config.hasPath("broadcasterId") ? config.getString("broadcasterId") : null;
@@ -103,37 +111,32 @@ public final class TwitchRetriever extends AbstractRetriever {
       throw new SpecException(name, "Invalid key combination (expected languages only with gameId)");
     }
 
-    this.twitch = TwitchClientBuilder.builder().withEnableHelix(true).build();
+    this.http = HttpClient.newHttpClient();
   }
 
   /**
    * Retrieves recent clips for a game or broadcaster.
    *
    * @return A {@link List} of {@link ClipRef} representing the retrieved clips.
+   * @throws ComponentException if fetching fails at any step.
    */
   @Override
   public List<ClipRef> fetch() {
     Instant end = Instant.now();
     Instant start = end.minus(window);
+
     List<Clip> candidates = (gameId != null)
-        ? pageClips(gameId, null, start, end, limit, languages)
-        : pageClips(null, broadcasterId, start, end, limit, null);
+        ? pageClips(gameId, null, start, end)
+        : pageClips(null, broadcasterId, start, end);
 
     return candidates.stream()
-        .sorted(Comparator.comparingInt(Clip::getViewCount).reversed())
-        .map(clip -> new ClipRef(
-            clip.getId(),
-            clip.getUrl(),
-            clip.getTitle(),
-            clip.getBroadcasterName(),
-            clip.getLanguage(),
-            clip.getViewCount() != null ? clip.getViewCount() : 0,
-            tags))
+        .sorted(Comparator.comparingInt(Clip::viewCount).reversed())
+        .map(c -> new ClipRef(c.id(), c.url(), c.title(), c.broadcasterName(), c.language(), c.viewCount(), tags))
         .toList();
   }
 
   /**
-   * Pages through Helix clips for the given identifiers and time range.
+   * Pages through Twitch clips for the given identifiers and time range.
    *
    * @param gameId        A string representing the game identifier, or
    *                      {@code null}.
@@ -142,52 +145,72 @@ public final class TwitchRetriever extends AbstractRetriever {
    * @param start         An {@link Instant} representing the inclusive start
    *                      time.
    * @param end           An {@link Instant} representing the exclusive end time.
-   * @param limit         An integer representing the maximum number of clips to
-   *                      return.
-   * @param languages     A {@link List} of strings representing the clip
-   *                      languages, or {@code null}.
    * @return A {@link List} of {@link Clip} values gathered across pages.
+   * @throws ComponentException if an API call fails or the response is invalid.
    */
-  private List<Clip> pageClips(
-      String gameId,
-      String broadcasterId,
-      Instant start,
-      Instant end,
-      int limit,
-      List<String> languages) {
+  private List<Clip> pageClips(String gameId, String broadcasterId, Instant start, Instant end) {
     List<Clip> matches = new ArrayList<>();
     String cursor = null;
 
     while (matches.size() < limit) {
-      ClipList page = twitch.getHelix()
-          .getClips(
-              token,
-              broadcasterId,
-              gameId,
-              null,
-              cursor,
-              null,
-              100,
-              start,
-              end,
-              null)
-          .execute();
+      StringBuilder url = new StringBuilder("https://api.twitch.tv/helix/clips?");
+      if (gameId != null) {
+        url.append("game_id=").append(gameId);
+      } else {
+        url.append("broadcaster_id=").append(broadcasterId);
+      }
+      url.append("&started_at=").append(start);
+      url.append("&ended_at=").append(end);
+      url.append("&first=100");
+      if (cursor != null) {
+        url.append("&after=").append(cursor);
+      }
 
-      if (page.getData() == null || page.getData().isEmpty()) {
+      HttpRequest request = HttpRequest.newBuilder()
+          .uri(URI.create(url.toString()))
+          .header("Authorization", "Bearer " + token)
+          .header("Client-Id", clientId)
+          .GET()
+          .build();
+
+      String json = send(request);
+
+      JsonNode root;
+      try {
+        root = MAPPER.readTree(json);
+      } catch (IOException e) {
+        throw new ComponentException(name, "Failed to parse Twitch clips",
+            MapUtils.ofNullable("responseBody", json), e);
+      }
+
+      JsonNode data = root.path("data");
+      if (!data.isArray() || data.isEmpty()) {
         break;
       }
 
-      for (Clip clip : page.getData()) {
-        if (languages == null || languages.isEmpty() || languages.contains(clip.getLanguage())) {
-          matches.add(clip);
+      for (JsonNode node : data) {
+        String language = node.path("language").asText(null);
+        if (!languages.isEmpty() && !languages.contains(language)) {
+          continue;
+        }
 
-          if (matches.size() >= limit) {
-            break;
-          }
+        matches.add(new Clip(
+            node.path("id").asText(null),
+            node.path("url").asText(null),
+            node.path("title").asText(null),
+            node.path("broadcaster_name").asText(null),
+            language,
+            node.path("view_count").asInt(0)));
+
+        if (matches.size() >= limit) {
+          break;
         }
       }
 
-      cursor = (page.getPagination() != null) ? page.getPagination().getCursor() : null;
+      JsonNode paginationCursor = root.path("pagination").path("cursor");
+      cursor = paginationCursor.isMissingNode() || paginationCursor.isNull()
+          ? null
+          : paginationCursor.asText(null);
 
       if (cursor == null) {
         break;
@@ -195,5 +218,48 @@ public final class TwitchRetriever extends AbstractRetriever {
     }
 
     return matches;
+  }
+
+  /**
+   * Sends an HTTP request and returns the response body as a string.
+   *
+   * @param request A {@link HttpRequest} representing the request to send.
+   * @return A string representing the response body.
+   * @throws ComponentException if the request fails or returns a non-2xx status
+   *                            code.
+   */
+  private String send(HttpRequest request) {
+    URI uri = request.uri();
+    String method = request.method();
+
+    HttpResponse<String> response;
+    try {
+      response = http.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (IOException e) {
+      throw new ComponentException(name, "Failed to call Twitch Helix API",
+          MapUtils.ofNullable("method", method, "uri", uri.toString()), e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ComponentException(name, "Interrupted while calling Twitch Helix API",
+          MapUtils.ofNullable("method", method, "uri", uri.toString()), e);
+    }
+
+    int status = response.statusCode();
+    String body = response.body();
+    if (status < 200 || status >= 300) {
+      throw new ComponentException(name, "Twitch Helix API returned non-2xx status",
+          MapUtils.ofNullable("method", method, "uri", uri.toString(), "statusCode", status, "responseBody", body));
+    }
+
+    return body;
+  }
+
+  private record Clip(
+      String id,
+      String url,
+      String title,
+      String broadcasterName,
+      String language,
+      int viewCount) {
   }
 }
