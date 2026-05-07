@@ -138,7 +138,7 @@ public final class InstagramPublisher extends AbstractPublisher {
     long start = System.nanoTime();
 
     while (System.nanoTime() - start < timeout) {
-      URI endpoint = URI.create("https://graph.instagram.com/v23.0/" + containerId + "?fields=status_code");
+      URI endpoint = URI.create("https://graph.instagram.com/v23.0/" + containerId + "?fields=status_code,error_message");
 
       HttpRequest request = HttpRequest.newBuilder()
           .uri(endpoint)
@@ -149,8 +149,10 @@ public final class InstagramPublisher extends AbstractPublisher {
       String json = send(request);
 
       String status;
+      String error;
       try {
         status = MAPPER.readTree(json).at("/status_code").asText(null);
+        error = MAPPER.readTree(json).at("/error_message").asText(null);
       } catch (IOException e) {
         throw new ComponentException(name, "Failed to parse Instagram media container status",
             MapUtils.ofNullable("containerId", containerId, "endpoint", endpoint.toString(), "responseBody", json), e);
@@ -167,7 +169,8 @@ public final class InstagramPublisher extends AbstractPublisher {
 
       if ("ERROR".equalsIgnoreCase(status)) {
         throw new ComponentException(name, "Instagram media container status entered error state",
-            MapUtils.ofNullable("containerId", containerId, "endpoint", endpoint.toString(), "responseBody", json));
+            MapUtils.ofNullable("containerId", containerId, "endpoint", endpoint.toString(), "responseBody", json,
+                "error", String.valueOf(error)));
       }
 
       try {
@@ -330,5 +333,4 @@ public final class InstagramPublisher extends AbstractPublisher {
 
     return sb.toString();
   }
-
 }
