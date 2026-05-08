@@ -1,6 +1,7 @@
 package info.henrycaldwell.aggregator.transform;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,6 +19,7 @@ import com.typesafe.config.ConfigFactory;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
+import info.henrycaldwell.aggregator.util.PathUtils;
 
 public class MusicTransformerTest {
 
@@ -223,6 +225,35 @@ public class MusicTransformerTest {
   class Apply {
 
     @Test
+    void returnsMediaRefOnSuccess() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Path music = tempDir.resolve("music.mp3");
+      Files.writeString(source, "data");
+      Files.writeString(music, "data");
+      Path target = PathUtils.deriveOut(source, "-music.mp4");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = music
+          ffmpegPath = ffmpeg
+          musicPath = "%s"
+          """.formatted(music.toString().replace("\\", "\\\\")));
+      ProcessFactory factory = pb -> {
+        Files.writeString(target, "output");
+        return new ProcessBuilder(javaBinary(), "-version")
+            .redirectErrorStream(true)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .start();
+      };
+      MusicTransformer transformer = new MusicTransformer(config, factory);
+
+      MediaRef result = assertDoesNotThrow(() -> transformer.apply(media));
+
+      assertEquals(target, result.file());
+    }
+
+    @Test
     void throwsWhenMusicFileIsMissing() throws IOException {
       Path source = tempDir.resolve("source.mp4");
       Path music = tempDir.resolve("music.mp3");
@@ -242,5 +273,32 @@ public class MusicTransformerTest {
       assertTrue(exception.getMessage().contains("Music file missing or not a regular file"));
       assertTrue(exception.getMessage().contains("musicPath=" + music));
     }
+
+    @Test
+    void throwsWhenMusicFileIsNotARegularFile() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Path music = tempDir.resolve("music.mp3");
+      Files.writeString(source, "source");
+      Files.createDirectory(music);
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = music
+          ffmpegPath = ffmpeg
+          musicPath = "%s"
+          """.formatted(music.toString().replace("\\", "\\\\")));
+      MusicTransformer transformer = new MusicTransformer(config);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> transformer.apply(media));
+
+      assertTrue(exception.getMessage().contains("Music file missing or not a regular file"));
+      assertTrue(exception.getMessage().contains("musicPath=" + music));
+    }
+  }
+
+  private static String javaBinary() {
+    String exe = System.getProperty("os.name").toLowerCase().contains("win") ? "java.exe" : "java";
+    return Path.of(System.getProperty("java.home"), "bin", exe).toString();
   }
 }

@@ -42,7 +42,19 @@ public final class MusicTransformer extends FFmpegTransformer {
    * @throws SpecException if the configuration violates the transformer spec.
    */
   public MusicTransformer(Config config) {
-    super(config, SPEC);
+    this(config, null);
+  }
+
+  /**
+   * Constructs a MusicTransformer with a custom process factory for testing.
+   *
+   * @param config  A {@link Config} representing the transformer configuration.
+   * @param factory A {@link ProcessFactory} for creating the transformation subprocess,
+   *                or {@code null} to use the default FFmpeg command.
+   * @throws SpecException if the configuration violates the transformer spec.
+   */
+  MusicTransformer(Config config, ProcessFactory factory) {
+    super(config, SPEC, factory);
 
     this.musicPath = config.getString("musicPath");
 
