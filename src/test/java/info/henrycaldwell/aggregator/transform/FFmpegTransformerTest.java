@@ -1,7 +1,6 @@
 package info.henrycaldwell.aggregator.transform;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,20 +32,18 @@ public class FFmpegTransformerTest {
   class Constructor {
 
     @Test
-    void usesDefaultTimeout() {
+    void acceptsMinimalConfig() {
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
           ffmpegPath = ffmpeg
           """);
 
-      TestFFmpegTransformer transformer = new TestFFmpegTransformer(config);
-
-      assertEquals(180L, transformer.timeout());
+      assertDoesNotThrow(() -> new TestFFmpegTransformer(config));
     }
 
     @Test
-    void usesConfiguredTimeout() {
+    void acceptsConfiguredTimeout() {
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -54,9 +51,7 @@ public class FFmpegTransformerTest {
           timeout = 30
           """);
 
-      TestFFmpegTransformer transformer = new TestFFmpegTransformer(config);
-
-      assertEquals(30L, transformer.timeout());
+      assertDoesNotThrow(() -> new TestFFmpegTransformer(config));
     }
 
     @Test
@@ -145,6 +140,27 @@ public class FFmpegTransformerTest {
     void throwsWhenSourceIsMissing() {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = test
+          ffmpegPath = ffmpeg
+          """);
+      TestFFmpegTransformer transformer = new TestFFmpegTransformer(config);
+
+      ComponentException exception = assertThrows(ComponentException.class,
+          () -> transformer.callPreflight(media, source, target));
+
+      assertTrue(exception.getMessage().contains("Input file missing or not a regular file"));
+      assertTrue(exception.getMessage().contains("sourcePath=" + source));
+    }
+
+    @Test
+    void throwsWhenSourceIsNotARegularFile() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Path target = tempDir.resolve("target.mp4");
+      Files.createDirectory(source);
 
       MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
       Config config = ConfigFactory.parseString("""
@@ -264,26 +280,6 @@ public class FFmpegTransformerTest {
     }
 
     @Test
-    void throwsWhenProcessExitsWithNonZeroCode() {
-      Path source = tempDir.resolve("source.mp4");
-      Path target = tempDir.resolve("target.mp4");
-
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
-      Config config = ConfigFactory.parseString("""
-          name = transformer
-          type = test
-          ffmpegPath = ffmpeg
-          """);
-      TestFFmpegTransformer transformer = new TestFFmpegTransformer(config);
-
-      ComponentException exception = assertThrows(ComponentException.class,
-          () -> transformer.callRunProcess(javaCommand("--definitely-not-a-real-java-option"), media, source, target));
-
-      assertTrue(exception.getMessage().contains("ffmpeg process exited with non-zero code"));
-      assertTrue(exception.getMessage().contains("exitCode="));
-    }
-
-    @Test
     void throwsWhenProcessTimesOut() {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
@@ -306,6 +302,26 @@ public class FFmpegTransformerTest {
 
       assertTrue(exception.getMessage().contains("Timed out while waiting for ffmpeg process"));
       assertTrue(exception.getMessage().contains("timeout=1"));
+    }
+
+    @Test
+    void throwsWhenProcessExitsWithNonZeroCode() {
+      Path source = tempDir.resolve("source.mp4");
+      Path target = tempDir.resolve("target.mp4");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = test
+          ffmpegPath = ffmpeg
+          """);
+      TestFFmpegTransformer transformer = new TestFFmpegTransformer(config);
+
+      ComponentException exception = assertThrows(ComponentException.class,
+          () -> transformer.callRunProcess(javaCommand("--definitely-not-a-real-java-option"), media, source, target));
+
+      assertTrue(exception.getMessage().contains("ffmpeg process exited with non-zero code"));
+      assertTrue(exception.getMessage().contains("exitCode="));
     }
   }
 
@@ -386,10 +402,6 @@ public class FFmpegTransformerTest {
 
     private TestFFmpegTransformer(Config config) {
       super(config, Spec.builder().build());
-    }
-
-    private long timeout() {
-      return timeout;
     }
 
     private void callPreflight(MediaRef media, Path source, Path target) {

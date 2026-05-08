@@ -30,6 +30,8 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
   protected final String ffmpegPath;
   protected final long timeout;
 
+  private final ProcessFactory factory;
+
   /**
    * Constructs an FFmpegTransformer.
    *
@@ -38,6 +40,19 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
    * @throws SpecException if the configuration violates the transformer spec.
    */
   protected FFmpegTransformer(Config config, Spec spec) {
+    this(config, spec, null);
+  }
+
+  /**
+   * Constructs an FFmpegTransformer with a custom process factory for testing.
+   *
+   * @param config  A {@link Config} representing the transformer configuration.
+   * @param spec    A {@link Spec} representing the subclass-specific spec.
+   * @param factory A {@link ProcessFactory} for creating the transformation subprocess,
+   *                or {@code null} to use the default FFmpeg command.
+   * @throws SpecException if the configuration violates the transformer spec.
+   */
+  protected FFmpegTransformer(Config config, Spec spec, ProcessFactory factory) {
     super(config, Spec.union(FFMPEG_SPEC, spec));
 
     this.ffmpegPath = config.getString("ffmpegPath");
@@ -48,6 +63,8 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
           MapUtils.ofNullable("key", "timeout", "value", timeout));
     }
     this.timeout = timeout;
+
+    this.factory = factory != null ? factory : ProcessBuilder::start;
   }
 
   /**
@@ -100,7 +117,7 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
     try {
       pb.redirectErrorStream(true);
       pb.redirectOutput(Redirect.DISCARD);
-      process = pb.start();
+      process = factory.start(pb);
     } catch (IOException e) {
       throw new ComponentException(name, "Failed to start ffmpeg process", MapUtils.ofNullable("ffmpegPath", ffmpegPath,
           "clipId", media.id(), "sourcePath", source, "targetPath", target), e);
