@@ -513,6 +513,38 @@ public class CloudflareR2StagerTest {
     }
 
     @Test
+    void throwsWhenSourceIsNotARegularFile() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Files.createDirectory(source);
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = cloudflare-r2
+          accountId = account-1
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          """);
+      S3Operations operations = new S3Operations() {
+        @Override
+        public void putObject(PutObjectRequest request, RequestBody body) {
+        }
+
+        @Override
+        public void deleteObject(DeleteObjectRequest request) {
+        }
+      };
+      CloudflareR2Stager stager = new CloudflareR2Stager(config, operations);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> stager.apply(media));
+
+      assertTrue(exception.getMessage().contains("Input file missing or not a regular file"));
+      assertTrue(exception.getMessage().contains("sourcePath=" + source));
+    }
+
+    @Test
     void throwsWhenUploadFails() throws IOException {
       Path source = tempDir.resolve("clip.mp4");
       Files.writeString(source, "data");
