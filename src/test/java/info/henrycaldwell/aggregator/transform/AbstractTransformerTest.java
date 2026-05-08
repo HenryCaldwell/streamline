@@ -1,5 +1,6 @@
 package info.henrycaldwell.aggregator.transform;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,6 +29,16 @@ public class AbstractTransformerTest {
 
   @Nested
   class Constructor {
+
+    @Test
+    void acceptsMinimalConfig() {
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = test
+          """);
+
+      assertDoesNotThrow(() -> new TestTransformer(config, null));
+    }
 
     @Test
     void throwsOnMissingName() {
@@ -153,6 +164,26 @@ public class AbstractTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Path output = tempDir.resolve("output.mp4");
       Files.writeString(source, "source");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = test
+          """);
+      TestTransformer transformer = new TestTransformer(config, media.withFile(output));
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> transformer.transform(media));
+
+      assertTrue(exception.getMessage().contains("Transformer produced a non-regular output file"));
+      assertTrue(exception.getMessage().contains("outputPath=" + output));
+    }
+
+    @Test
+    void throwsWhenApplyReturnsDirectoryOutputFile() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Path output = tempDir.resolve("output.mp4");
+      Files.writeString(source, "source");
+      Files.createDirectory(output);
 
       MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
       Config config = ConfigFactory.parseString("""
