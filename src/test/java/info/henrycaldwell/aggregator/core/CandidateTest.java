@@ -39,6 +39,16 @@ public class CandidateTest {
     }
 
     @Test
+    void returnsPositiveWhenThisCandidateHasFewerViews() {
+      Candidate lowViews = new Candidate(null, null, new ClipRef("low", null, null, null, null, 100, null));
+      Candidate highViews = new Candidate(null, null, new ClipRef("high", null, null, null, null, 500, null));
+
+      int result = lowViews.compareTo(highViews);
+
+      assertTrue(result > 0);
+    }
+
+    @Test
     void returnsNegativeWhenThisCandidateHasMoreViews() {
       Candidate highViews = new Candidate(null, null, new ClipRef("high", null, null, null, null, 500, null));
       Candidate lowViews = new Candidate(null, null, new ClipRef("low", null, null, null, null, 100, null));
