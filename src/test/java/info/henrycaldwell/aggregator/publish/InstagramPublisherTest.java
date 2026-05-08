@@ -351,6 +351,28 @@ public class InstagramPublisherTest {
     }
 
     @Test
+    void throwsOnInvalidJsonDuringStatusCheck() {
+      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
+          "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = publisher
+          type = instagram
+          accountId = account-1
+          accessKey = key-1
+          """);
+      int[] call = { 0 };
+      HttpSender sender = request -> switch (call[0]++) {
+        case 0 -> "{\"id\": \"container-1\"}";
+        default -> "not-valid-json";
+      };
+      InstagramPublisher publisher = new InstagramPublisher(config, sender);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> publisher.publish(media));
+
+      assertTrue(exception.getMessage().contains("Failed to parse Instagram media container status"));
+    }
+
+    @Test
     void throwsWhenContainerStatusIsMissing() {
       MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
           "Broadcaster", "en", null);
@@ -421,6 +443,29 @@ public class InstagramPublisherTest {
     }
 
     @Test
+    void throwsOnInvalidJsonDuringPublish() {
+      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
+          "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = publisher
+          type = instagram
+          accountId = account-1
+          accessKey = key-1
+          """);
+      int[] call = { 0 };
+      HttpSender sender = request -> switch (call[0]++) {
+        case 0 -> "{\"id\": \"container-1\"}";
+        case 1 -> "{\"status_code\": \"FINISHED\"}";
+        default -> "not-valid-json";
+      };
+      InstagramPublisher publisher = new InstagramPublisher(config, sender);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> publisher.publish(media));
+
+      assertTrue(exception.getMessage().contains("Failed to parse Instagram media id"));
+    }
+
+    @Test
     void throwsWhenPublishReturnsNoId() {
       MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
           "Broadcaster", "en", null);
@@ -441,6 +486,30 @@ public class InstagramPublisherTest {
       ComponentException exception = assertThrows(ComponentException.class, () -> publisher.publish(media));
 
       assertTrue(exception.getMessage().contains("Instagram media publish did not return an id"));
+    }
+
+    @Test
+    void throwsOnInvalidJsonDuringPermalinkFetch() {
+      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
+          "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = publisher
+          type = instagram
+          accountId = account-1
+          accessKey = key-1
+          """);
+      int[] call = { 0 };
+      HttpSender sender = request -> switch (call[0]++) {
+        case 0 -> "{\"id\": \"container-1\"}";
+        case 1 -> "{\"status_code\": \"FINISHED\"}";
+        case 2 -> "{\"id\": \"media-1\"}";
+        default -> "not-valid-json";
+      };
+      InstagramPublisher publisher = new InstagramPublisher(config, sender);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> publisher.publish(media));
+
+      assertTrue(exception.getMessage().contains("Failed to parse Instagram media permalink"));
     }
 
     @Test
