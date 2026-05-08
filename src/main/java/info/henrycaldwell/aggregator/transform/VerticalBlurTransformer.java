@@ -35,7 +35,20 @@ public final class VerticalBlurTransformer extends FFmpegTransformer {
    * @throws SpecException if the configuration violates the transformer spec.
    */
   public VerticalBlurTransformer(Config config) {
-    super(config, SPEC);
+    this(config, null);
+  }
+
+  /**
+   * Constructs a VerticalBlurTransformer with a custom process factory for
+   * testing.
+   *
+   * @param config  A {@link Config} representing the transformer configuration.
+   * @param factory A {@link ProcessFactory} for creating the transformation subprocess,
+   *                or {@code null} to use the default FFmpeg command.
+   * @throws SpecException if the configuration violates the transformer spec.
+   */
+  VerticalBlurTransformer(Config config, ProcessFactory factory) {
+    super(config, SPEC, factory);
 
     int targetWidth = config.hasPath("targetWidth") ? config.getNumber("targetWidth").intValue() : 1080;
     if (targetWidth <= 0) {
