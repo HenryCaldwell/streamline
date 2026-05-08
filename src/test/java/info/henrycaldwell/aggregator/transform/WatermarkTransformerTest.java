@@ -1,6 +1,7 @@
 package info.henrycaldwell.aggregator.transform;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,6 +19,7 @@ import com.typesafe.config.ConfigFactory;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
+import info.henrycaldwell.aggregator.util.PathUtils;
 
 public class WatermarkTransformerTest {
 
@@ -594,6 +596,33 @@ public class WatermarkTransformerTest {
   class Apply {
 
     @Test
+    void returnsMediaRefOnSuccess() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Files.writeString(source, "data");
+      Path target = PathUtils.deriveOut(source, "-temp.mp4");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = watermark
+          ffmpegPath = ffmpeg
+          fontPath = font.ttf
+          """);
+      ProcessFactory factory = pb -> {
+        Files.writeString(target, "output");
+        return new ProcessBuilder(javaBinary(), "-version")
+            .redirectErrorStream(true)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .start();
+      };
+      WatermarkTransformer transformer = new WatermarkTransformer(config, factory);
+
+      MediaRef result = assertDoesNotThrow(() -> transformer.apply(media));
+
+      assertEquals(target, result.file());
+    }
+
+    @Test
     void throwsWhenBroadcasterIsNull() throws IOException {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
@@ -678,5 +707,34 @@ public class WatermarkTransformerTest {
       assertTrue(exception.getMessage().contains("clipId=clip-1"));
       assertTrue(exception.getMessage().contains("logoPath=" + logo));
     }
+
+    @Test
+    void throwsWhenLogoFileIsNotARegularFile() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Path logo = tempDir.resolve("logo.png");
+      Files.writeString(source, "source");
+      Files.createDirectory(logo);
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = watermark
+          ffmpegPath = ffmpeg
+          fontPath = font.ttf
+          logoPath = "%s"
+          """.formatted(logo.toString().replace("\\", "\\\\")));
+      WatermarkTransformer transformer = new WatermarkTransformer(config);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> transformer.apply(media));
+
+      assertTrue(exception.getMessage().contains("Logo file missing or not a regular file"));
+      assertTrue(exception.getMessage().contains("clipId=clip-1"));
+      assertTrue(exception.getMessage().contains("logoPath=" + logo));
+    }
+  }
+
+  private static String javaBinary() {
+    String exe = System.getProperty("os.name").toLowerCase().contains("win") ? "java.exe" : "java";
+    return Path.of(System.getProperty("java.home"), "bin", exe).toString();
   }
 }
