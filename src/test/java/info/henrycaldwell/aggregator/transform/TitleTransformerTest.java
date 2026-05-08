@@ -1,6 +1,7 @@
 package info.henrycaldwell.aggregator.transform;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,6 +19,7 @@ import com.typesafe.config.ConfigFactory;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
+import info.henrycaldwell.aggregator.util.PathUtils;
 
 public class TitleTransformerTest {
 
@@ -844,6 +846,35 @@ public class TitleTransformerTest {
   class Apply {
 
     @Test
+    void returnsMediaRefOnSuccess() throws Exception {
+      Path font = Path.of(ClassLoader.getSystemResource("fonts/test.ttf").toURI());
+      Path source = tempDir.resolve("source.mp4");
+      Files.writeString(source, "data");
+      Path target = PathUtils.deriveOut(source, "-temp.mp4");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = title
+          ffmpegPath = ffmpeg
+          fontPath = "%s"
+          targetWidth = 800
+          """.formatted(font.toString().replace("\\", "\\\\")));
+      ProcessFactory factory = pb -> {
+        Files.writeString(target, "output");
+        return new ProcessBuilder(javaBinary(), "-version")
+            .redirectErrorStream(true)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .start();
+      };
+      TitleTransformer transformer = new TitleTransformer(config, factory);
+
+      MediaRef result = assertDoesNotThrow(() -> transformer.apply(media));
+
+      assertEquals(target, result.file());
+    }
+
+    @Test
     void throwsWhenTitleIsNull() throws IOException {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
@@ -909,5 +940,10 @@ public class TitleTransformerTest {
       assertTrue(exception.getMessage().contains("title=\uD83D\uDE00"));
       assertTrue(exception.getMessage().contains("formattedTitle="));
     }
+  }
+
+  private static String javaBinary() {
+    String exe = System.getProperty("os.name").toLowerCase().contains("win") ? "java.exe" : "java";
+    return Path.of(System.getProperty("java.home"), "bin", exe).toString();
   }
 }
