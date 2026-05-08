@@ -122,6 +122,25 @@ public class AbstractTransformerTest {
     }
 
     @Test
+    void throwsWhenSourceFileIsNull() throws IOException {
+      Path output = tempDir.resolve("output.mp4");
+      Files.writeString(output, "output");
+
+      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = test
+          """);
+      TestTransformer transformer = new TestTransformer(config, media.withFile(output));
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> transformer.transform(media));
+
+      assertTrue(exception.getMessage().contains("Transformer did not produce a new output file"));
+      assertTrue(exception.getMessage().contains("sourcePath=null"));
+      assertTrue(exception.getMessage().contains("outputPath=" + output));
+    }
+
+    @Test
     void throwsWhenApplyReturnsNullOutputFile() throws IOException {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
