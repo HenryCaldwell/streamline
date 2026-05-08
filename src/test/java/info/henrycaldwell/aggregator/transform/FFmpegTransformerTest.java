@@ -111,6 +111,21 @@ public class FFmpegTransformerTest {
       assertTrue(exception.getMessage().contains("key=timeout"));
       assertTrue(exception.getMessage().contains("value=0"));
     }
+
+    @Test
+    void throwsOnUnknownKey() {
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = test
+          ffmpegPath = ffmpeg
+          extra = value
+          """);
+
+      SpecException exception = assertThrows(SpecException.class, () -> new TestFFmpegTransformer(config));
+
+      assertTrue(exception.getMessage().contains("Unknown configuration key"));
+      assertTrue(exception.getMessage().contains("key=extra"));
+    }
   }
 
   @Nested
