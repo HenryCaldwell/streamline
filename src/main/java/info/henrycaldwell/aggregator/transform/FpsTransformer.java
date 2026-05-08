@@ -32,7 +32,19 @@ public final class FpsTransformer extends FFmpegTransformer {
    * @throws SpecException if the configuration violates the transformer spec.
    */
   public FpsTransformer(Config config) {
-    super(config, SPEC);
+    this(config, null);
+  }
+
+  /**
+   * Constructs an FpsTransformer with a custom process factory for testing.
+   *
+   * @param config  A {@link Config} representing the transformer configuration.
+   * @param factory A {@link ProcessFactory} for creating the transformation subprocess,
+   *                or {@code null} to use the default FFmpeg command.
+   * @throws SpecException if the configuration violates the transformer spec.
+   */
+  FpsTransformer(Config config, ProcessFactory factory) {
+    super(config, SPEC, factory);
 
     int targetFps = config.hasPath("targetFps") ? config.getNumber("targetFps").intValue() : 30;
     if (targetFps <= 0) {

@@ -1,18 +1,29 @@
 package info.henrycaldwell.aggregator.transform;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.SpecException;
+import info.henrycaldwell.aggregator.util.PathUtils;
 
 public class FpsTransformerTest {
+
+  @TempDir
+  Path tempDir;
 
   @Nested
   class Constructor {
@@ -86,5 +97,40 @@ public class FpsTransformerTest {
       assertTrue(exception.getMessage().contains("Unknown configuration key"));
       assertTrue(exception.getMessage().contains("key=extra"));
     }
+  }
+
+  @Nested
+  class Apply {
+
+    @Test
+    void returnsMediaRefOnSuccess() throws IOException {
+      Path source = tempDir.resolve("source.mp4");
+      Files.writeString(source, "data");
+      Path target = PathUtils.deriveOut(source, "-temp.mp4");
+
+      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = transformer
+          type = fps
+          ffmpegPath = ffmpeg
+          """);
+      ProcessFactory factory = pb -> {
+        Files.writeString(target, "output");
+        return new ProcessBuilder(javaBinary(), "-version")
+            .redirectErrorStream(true)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .start();
+      };
+      FpsTransformer transformer = new FpsTransformer(config, factory);
+
+      MediaRef result = assertDoesNotThrow(() -> transformer.apply(media));
+
+      assertEquals(target, result.file());
+    }
+  }
+
+  private static String javaBinary() {
+    String exe = System.getProperty("os.name").toLowerCase().contains("win") ? "java.exe" : "java";
+    return Path.of(System.getProperty("java.home"), "bin", exe).toString();
   }
 }
