@@ -5,7 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -269,6 +274,23 @@ public class TwitchRetrieverTest {
     }
 
     @Test
+    void throwsOnWrongTypeForLanguages() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = twitch
+          clientId = client-1
+          token = token-1
+          gameId = game-1
+          languages = en
+          """);
+
+      SpecException exception = assertThrows(SpecException.class, () -> new TwitchRetriever(config));
+
+      assertTrue(exception.getMessage().contains("Incorrect key type (expected list<string>)"));
+      assertTrue(exception.getMessage().contains("key=languages"));
+    }
+
+    @Test
     void throwsOnBlankLanguage() {
       Config config = ConfigFactory.parseString("""
           name = retriever
@@ -283,6 +305,23 @@ public class TwitchRetrieverTest {
 
       assertTrue(exception.getMessage().contains("Invalid key value"));
       assertTrue(exception.getMessage().contains("key=languages"));
+    }
+
+    @Test
+    void throwsOnWrongTypeForTags() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = twitch
+          clientId = client-1
+          token = token-1
+          gameId = game-1
+          tags = funny
+          """);
+
+      SpecException exception = assertThrows(SpecException.class, () -> new TwitchRetriever(config));
+
+      assertTrue(exception.getMessage().contains("Incorrect key type (expected list<string>)"));
+      assertTrue(exception.getMessage().contains("key=tags"));
     }
 
     @Test
@@ -375,7 +414,7 @@ public class TwitchRetrieverTest {
   class Fetch {
 
     @Test
-    void returnsSortedClipRefsOnSuccess() {
+    void returnsSortedClipRefsForGameId() {
       Config config = ConfigFactory.parseString("""
           name = retriever
           type = twitch
@@ -426,6 +465,43 @@ public class TwitchRetrieverTest {
     }
 
     @Test
+    void returnsSortedClipRefsForBroadcasterId() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = twitch
+          clientId = client-1
+          token = token-1
+          broadcasterId = broadcaster-1
+          """);
+      HttpSender sender = request -> """
+          {
+            "data": [
+              {
+                "id": "clip-1",
+                "url": "https://clips.twitch.tv/clip-1",
+                "title": "Title One",
+                "broadcaster_name": "Broadcaster One",
+                "language": "en",
+                "view_count": 100
+              }
+            ],
+            "pagination": {}
+          }
+          """;
+      TwitchRetriever retriever = new TwitchRetriever(config, sender);
+
+      List<ClipRef> result = assertDoesNotThrow(() -> retriever.fetch());
+
+      assertEquals(1, result.size());
+      assertEquals("clip-1", result.get(0).id());
+      assertEquals("https://clips.twitch.tv/clip-1", result.get(0).url());
+      assertEquals("Title One", result.get(0).title());
+      assertEquals("Broadcaster One", result.get(0).broadcaster());
+      assertEquals("en", result.get(0).language());
+      assertEquals(100, result.get(0).views());
+    }
+
+    @Test
     void returnsEmptyListWhenNoClipsReturned() {
       Config config = ConfigFactory.parseString("""
           name = retriever
@@ -440,87 +516,6 @@ public class TwitchRetrieverTest {
       List<ClipRef> result = assertDoesNotThrow(() -> retriever.fetch());
 
       assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void filtersClipsByLanguage() {
-      Config config = ConfigFactory.parseString("""
-          name = retriever
-          type = twitch
-          clientId = client-1
-          token = token-1
-          gameId = game-1
-          languages = [en]
-          """);
-      HttpSender sender = request -> """
-          {
-            "data": [
-              {
-                "id": "clip-1",
-                "url": "https://clips.twitch.tv/clip-1",
-                "title": "Title One",
-                "broadcaster_name": "Broadcaster One",
-                "language": "en",
-                "view_count": 100
-              },
-              {
-                "id": "clip-2",
-                "url": "https://clips.twitch.tv/clip-2",
-                "title": "Title Two",
-                "broadcaster_name": "Broadcaster Two",
-                "language": "fr",
-                "view_count": 50
-              }
-            ],
-            "pagination": {}
-          }
-          """;
-      TwitchRetriever retriever = new TwitchRetriever(config, sender);
-
-      List<ClipRef> result = assertDoesNotThrow(() -> retriever.fetch());
-
-      assertEquals(1, result.size());
-      assertEquals("clip-1", result.get(0).id());
-    }
-
-    @Test
-    void limitsClipCount() {
-      Config config = ConfigFactory.parseString("""
-          name = retriever
-          type = twitch
-          clientId = client-1
-          token = token-1
-          gameId = game-1
-          limit = 1
-          """);
-      HttpSender sender = request -> """
-          {
-            "data": [
-              {
-                "id": "clip-1",
-                "url": "https://clips.twitch.tv/clip-1",
-                "title": "Title One",
-                "broadcaster_name": "Broadcaster One",
-                "language": "en",
-                "view_count": 100
-              },
-              {
-                "id": "clip-2",
-                "url": "https://clips.twitch.tv/clip-2",
-                "title": "Title Two",
-                "broadcaster_name": "Broadcaster Two",
-                "language": "en",
-                "view_count": 50
-              }
-            ],
-            "pagination": {}
-          }
-          """;
-      TwitchRetriever retriever = new TwitchRetriever(config, sender);
-
-      List<ClipRef> result = assertDoesNotThrow(() -> retriever.fetch());
-
-      assertEquals(1, result.size());
     }
 
     @Test
@@ -571,6 +566,148 @@ public class TwitchRetrieverTest {
 
       assertEquals(2, result.size());
       assertEquals(2, call[0]);
+    }
+
+    @Test
+    void limitsByWindow() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = twitch
+          clientId = client-1
+          token = token-1
+          gameId = game-1
+          window = 48
+          """);
+      Duration[] capturedWindow = { null };
+      HttpSender sender = request -> {
+        String query = request.uri().getQuery();
+        Map<String, String> params = Arrays.stream(query.split("&"))
+            .map(p -> p.split("=", 2))
+            .filter(kv -> kv.length == 2)
+            .collect(Collectors.toMap(kv -> kv[0], kv -> kv[1]));
+        Instant startedAt = Instant.parse(params.get("started_at"));
+        Instant endedAt = Instant.parse(params.get("ended_at"));
+        capturedWindow[0] = Duration.between(startedAt, endedAt);
+        return "{\"data\": [], \"pagination\": {}}";
+      };
+      TwitchRetriever retriever = new TwitchRetriever(config, sender);
+
+      assertDoesNotThrow(() -> retriever.fetch());
+
+      assertEquals(Duration.ofHours(48), capturedWindow[0]);
+    }
+
+    @Test
+    void limitsByCount() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = twitch
+          clientId = client-1
+          token = token-1
+          gameId = game-1
+          limit = 1
+          """);
+      HttpSender sender = request -> """
+          {
+            "data": [
+              {
+                "id": "clip-1",
+                "url": "https://clips.twitch.tv/clip-1",
+                "title": "Title One",
+                "broadcaster_name": "Broadcaster One",
+                "language": "en",
+                "view_count": 100
+              },
+              {
+                "id": "clip-2",
+                "url": "https://clips.twitch.tv/clip-2",
+                "title": "Title Two",
+                "broadcaster_name": "Broadcaster Two",
+                "language": "en",
+                "view_count": 50
+              }
+            ],
+            "pagination": {}
+          }
+          """;
+      TwitchRetriever retriever = new TwitchRetriever(config, sender);
+
+      List<ClipRef> result = assertDoesNotThrow(() -> retriever.fetch());
+
+      assertEquals(1, result.size());
+    }
+
+    @Test
+    void filtersByLanguage() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = twitch
+          clientId = client-1
+          token = token-1
+          gameId = game-1
+          languages = [en]
+          """);
+      HttpSender sender = request -> """
+          {
+            "data": [
+              {
+                "id": "clip-1",
+                "url": "https://clips.twitch.tv/clip-1",
+                "title": "Title One",
+                "broadcaster_name": "Broadcaster One",
+                "language": "en",
+                "view_count": 100
+              },
+              {
+                "id": "clip-2",
+                "url": "https://clips.twitch.tv/clip-2",
+                "title": "Title Two",
+                "broadcaster_name": "Broadcaster Two",
+                "language": "fr",
+                "view_count": 50
+              }
+            ],
+            "pagination": {}
+          }
+          """;
+      TwitchRetriever retriever = new TwitchRetriever(config, sender);
+
+      List<ClipRef> result = assertDoesNotThrow(() -> retriever.fetch());
+
+      assertEquals(1, result.size());
+      assertEquals("clip-1", result.get(0).id());
+    }
+
+    @Test
+    void propagatesTags() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = twitch
+          clientId = client-1
+          token = token-1
+          gameId = game-1
+          tags = [funny, highlights]
+          """);
+      HttpSender sender = request -> """
+          {
+            "data": [
+              {
+                "id": "clip-1",
+                "url": "https://clips.twitch.tv/clip-1",
+                "title": "Title One",
+                "broadcaster_name": "Broadcaster One",
+                "language": "en",
+                "view_count": 100
+              }
+            ],
+            "pagination": {}
+          }
+          """;
+      TwitchRetriever retriever = new TwitchRetriever(config, sender);
+
+      List<ClipRef> result = assertDoesNotThrow(() -> retriever.fetch());
+
+      assertEquals(List.of("funny", "highlights"), result.get(0).tags());
     }
 
     @Test
