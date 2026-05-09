@@ -5,6 +5,7 @@ import com.typesafe.config.Config;
 import info.henrycaldwell.aggregator.util.MapUtils;
 import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.stage.CloudflareR2Stager;
+import info.henrycaldwell.aggregator.stage.NoOpStager;
 import info.henrycaldwell.aggregator.stage.Stager;
 
 /**
@@ -42,6 +43,9 @@ public final class StagerFactory {
     switch (type) {
       case "cloudflare-r2" -> {
         return new CloudflareR2Stager(config);
+      }
+      case "no_op" -> {
+        return new NoOpStager(config);
       }
       default -> throw new SpecException(name, "Unknown stager type", MapUtils.ofNullable("type", type));
     }
