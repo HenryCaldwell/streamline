@@ -20,6 +20,16 @@ public class AbstractHistoryTest {
   class Constructor {
 
     @Test
+    void acceptsMinimalConfig() {
+      Config config = ConfigFactory.parseString("""
+          name = history
+          type = test
+          """);
+
+      assertDoesNotThrow(() -> new TestHistory(config));
+    }
+
+    @Test
     void throwsOnMissingName() {
       Config config = ConfigFactory.parseString("""
           type = test
