@@ -1,5 +1,6 @@
 package info.henrycaldwell.aggregator.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,10 +11,21 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import info.henrycaldwell.aggregator.error.SpecException;
+
 public class RetrieverFactoryTest {
 
   @Nested
   class FromConfig {
+
+    @Test
+    void returnsRetriever() {
+      Config config = ConfigFactory.parseString("""
+          name = retriever
+          type = no_op
+          """);
+
+      assertDoesNotThrow(() -> RetrieverFactory.fromConfig(config));
+    }
 
     @Test
     void throwsOnMissingName() {
@@ -85,6 +97,5 @@ public class RetrieverFactoryTest {
       assertTrue(exception.getMessage().contains("Unknown retriever type"));
       assertTrue(exception.getMessage().contains("type=unknown"));
     }
-
   }
 }
