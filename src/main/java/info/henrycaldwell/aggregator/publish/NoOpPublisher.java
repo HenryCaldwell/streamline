@@ -26,10 +26,10 @@ public final class NoOpPublisher extends AbstractPublisher {
   }
 
   /**
-   * Publishes the input media by performing no external action.
+   * Publishes the input media by performing no action.
    *
    * @param media A {@link MediaRef} representing the media to publish.
-   * @return A {@link PublishRef} representing the published clip.
+   * @return A {@link PublishRef} representing the published media.
    */
   @Override
   public PublishRef publish(MediaRef media) {
