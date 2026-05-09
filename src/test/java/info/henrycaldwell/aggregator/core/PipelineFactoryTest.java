@@ -1,5 +1,6 @@
 package info.henrycaldwell.aggregator.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,6 +16,21 @@ public class PipelineFactoryTest {
 
   @Nested
   class FromConfig {
+
+    @Test
+    void returnsPipeline() {
+      Config config = ConfigFactory.parseString("""
+          name = pipeline
+          transformers = [
+            {
+              name = step
+              type = no_op
+            }
+          ]
+          """);
+
+      assertDoesNotThrow(() -> PipelineFactory.fromConfig(config));
+    }
 
     @Test
     void throwsOnMissingName() {
@@ -157,6 +173,5 @@ public class PipelineFactoryTest {
       assertTrue(exception.getMessage().contains("Unknown transformer type"));
       assertTrue(exception.getMessage().contains("type=unknown"));
     }
-
   }
 }
