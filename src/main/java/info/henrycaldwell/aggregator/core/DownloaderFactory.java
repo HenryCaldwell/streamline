@@ -3,6 +3,7 @@ package info.henrycaldwell.aggregator.core;
 import com.typesafe.config.Config;
 
 import info.henrycaldwell.aggregator.download.Downloader;
+import info.henrycaldwell.aggregator.download.NoOpDownloader;
 import info.henrycaldwell.aggregator.download.YtDlpDownloader;
 import info.henrycaldwell.aggregator.util.MapUtils;
 import info.henrycaldwell.aggregator.error.SpecException;
@@ -42,6 +43,9 @@ public final class DownloaderFactory {
     switch (type) {
       case "yt-dlp" -> {
         return new YtDlpDownloader(config);
+      }
+      case "no_op" -> {
+        return new NoOpDownloader(config);
       }
       default -> throw new SpecException(name, "Unknown downloader type", MapUtils.ofNullable("type", type));
     }
