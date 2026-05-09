@@ -1,5 +1,6 @@
 package info.henrycaldwell.aggregator.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,6 +16,16 @@ public class StagerFactoryTest {
 
   @Nested
   class FromConfig {
+
+    @Test
+    void returnsStager() {
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = no_op
+          """);
+
+      assertDoesNotThrow(() -> StagerFactory.fromConfig(config));
+    }
 
     @Test
     void throwsOnMissingName() {
@@ -98,6 +109,5 @@ public class StagerFactoryTest {
       assertTrue(exception.getMessage().contains("Unknown stager type"));
       assertTrue(exception.getMessage().contains("type=unknown"));
     }
-
   }
 }
