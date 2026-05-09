@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 
 import info.henrycaldwell.aggregator.util.MapUtils;
 import info.henrycaldwell.aggregator.error.SpecException;
+import info.henrycaldwell.aggregator.retrieve.NoOpRetriever;
 import info.henrycaldwell.aggregator.retrieve.Retriever;
 import info.henrycaldwell.aggregator.retrieve.TwitchRetriever;
 
@@ -42,6 +43,9 @@ public final class RetrieverFactory {
     switch (type) {
       case "twitch" -> {
         return new TwitchRetriever(config);
+      }
+      case "no_op" -> {
+        return new NoOpRetriever(config);
       }
       default -> throw new SpecException(name, "Unknown retriever type", MapUtils.ofNullable("type", type));
     }
