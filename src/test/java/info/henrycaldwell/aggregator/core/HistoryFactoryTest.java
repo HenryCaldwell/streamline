@@ -1,5 +1,6 @@
 package info.henrycaldwell.aggregator.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,10 +11,21 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import info.henrycaldwell.aggregator.error.SpecException;
+
 public class HistoryFactoryTest {
 
   @Nested
   class FromConfig {
+
+    @Test
+    void returnsHistory() {
+      Config config = ConfigFactory.parseString("""
+          name = history
+          type = no_op
+          """);
+
+      assertDoesNotThrow(() -> HistoryFactory.fromConfig(config));
+    }
 
     @Test
     void throwsOnMissingName() {
@@ -81,6 +93,5 @@ public class HistoryFactoryTest {
       assertTrue(exception.getMessage().contains("Unknown history type"));
       assertTrue(exception.getMessage().contains("type=unknown"));
     }
-
   }
 }
