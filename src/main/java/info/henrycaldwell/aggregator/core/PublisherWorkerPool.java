@@ -126,6 +126,7 @@ public final class PublisherWorkerPool {
         }
 
         if (published.get() < context.posts()) {
+          clean(media);
           continue;
         }
 
