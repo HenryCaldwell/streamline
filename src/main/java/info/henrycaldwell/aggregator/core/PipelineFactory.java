@@ -9,6 +9,7 @@ import com.typesafe.config.ConfigException;
 import info.henrycaldwell.aggregator.util.MapUtils;
 import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.transform.FpsTransformer;
+import info.henrycaldwell.aggregator.transform.NoOpTransformer;
 import info.henrycaldwell.aggregator.transform.MusicTransformer;
 import info.henrycaldwell.aggregator.transform.Pipeline;
 import info.henrycaldwell.aggregator.transform.TextTransformer;
@@ -90,6 +91,9 @@ public final class PipelineFactory {
         }
         case "text" -> {
           steps.add(new TextTransformer(transformerConfig));
+        }
+        case "no_op" -> {
+          steps.add(new NoOpTransformer(transformerConfig));
         }
         default -> throw new SpecException(transformerName, "Unknown transformer type", MapUtils.ofNullable("type", type));
       }
