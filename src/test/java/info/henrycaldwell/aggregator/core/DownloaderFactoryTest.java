@@ -1,5 +1,6 @@
 package info.henrycaldwell.aggregator.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,6 +16,16 @@ public class DownloaderFactoryTest {
 
   @Nested
   class FromConfig {
+
+    @Test
+    void returnsDownloader() {
+      Config config = ConfigFactory.parseString("""
+          name = downloader
+          type = no_op
+          """);
+
+      assertDoesNotThrow(() -> DownloaderFactory.fromConfig(config));
+    }
 
     @Test
     void throwsOnMissingName() {
@@ -82,6 +93,5 @@ public class DownloaderFactoryTest {
       assertTrue(exception.getMessage().contains("Unknown downloader type"));
       assertTrue(exception.getMessage().contains("type=unknown"));
     }
-
   }
 }
