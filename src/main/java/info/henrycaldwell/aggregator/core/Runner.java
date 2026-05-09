@@ -15,13 +15,13 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 
 import info.henrycaldwell.aggregator.download.Downloader;
-import info.henrycaldwell.aggregator.util.MapUtils;
 import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.history.History;
 import info.henrycaldwell.aggregator.publish.Publisher;
 import info.henrycaldwell.aggregator.retrieve.Retriever;
 import info.henrycaldwell.aggregator.stage.Stager;
 import info.henrycaldwell.aggregator.transform.Pipeline;
+import info.henrycaldwell.aggregator.util.MapUtils;
 
 /**
  * Class for orchestrating a single end-to-end media run.
@@ -74,8 +74,16 @@ public final class Runner {
    * @param config A {@link Config} representing the root configuration.
    */
   public static void run(Config config) {
-    RunnerContext context = buildContext(config);
+    run(buildContext(config));
+  }
 
+  /**
+   * Executes a single media run using the provided runner context.
+   *
+   * @param context A {@link RunnerContext} representing the configured
+   *                components.
+   */
+  public static void run(RunnerContext context) {
     LOG.info(
         "Built runner context (runner={}, posts={}, preparationThreads={}, publisherThreads={}, retrievers={}, history={}, downloader={}, pipelines={}, stager={}, publishers={})",
         context.name(),
@@ -276,7 +284,8 @@ public final class Runner {
     try {
       configs = root.getConfigList("retrievers");
     } catch (ConfigException.WrongType e) {
-      throw new SpecException("ROOT", "Incorrect key type (expected list)", MapUtils.ofNullable("key", "retrievers"), e);
+      throw new SpecException("ROOT", "Incorrect key type (expected list)", MapUtils.ofNullable("key", "retrievers"),
+          e);
     }
 
     for (Config config : configs) {
@@ -331,7 +340,8 @@ public final class Runner {
     try {
       config = root.getConfig("downloader");
     } catch (ConfigException.WrongType e) {
-      throw new SpecException("ROOT", "Incorrect key type (expected object)", MapUtils.ofNullable("key", "downloader"), e);
+      throw new SpecException("ROOT", "Incorrect key type (expected object)", MapUtils.ofNullable("key", "downloader"),
+          e);
     }
 
     return DownloaderFactory.fromConfig(config);
@@ -414,7 +424,8 @@ public final class Runner {
     try {
       configs = root.getConfigList("publishers");
     } catch (ConfigException.WrongType e) {
-      throw new SpecException("ROOT", "Incorrect key type (expected list)", MapUtils.ofNullable("key", "publishers"), e);
+      throw new SpecException("ROOT", "Incorrect key type (expected list)", MapUtils.ofNullable("key", "publishers"),
+          e);
     }
 
     for (Config config : configs) {
