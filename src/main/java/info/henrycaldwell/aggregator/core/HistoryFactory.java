@@ -5,6 +5,7 @@ import com.typesafe.config.Config;
 import info.henrycaldwell.aggregator.util.MapUtils;
 import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.history.History;
+import info.henrycaldwell.aggregator.history.NoOpHistory;
 import info.henrycaldwell.aggregator.history.SqliteHistory;
 
 /**
@@ -42,6 +43,9 @@ public final class HistoryFactory {
     switch (type) {
       case "sqlite" -> {
         return new SqliteHistory(config);
+      }
+      case "no_op" -> {
+        return new NoOpHistory(config);
       }
       default -> throw new SpecException(name, "Unknown history type", MapUtils.ofNullable("type", type));
     }
