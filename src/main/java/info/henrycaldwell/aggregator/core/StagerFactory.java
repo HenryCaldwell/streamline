@@ -2,11 +2,12 @@ package info.henrycaldwell.aggregator.core;
 
 import com.typesafe.config.Config;
 
-import info.henrycaldwell.aggregator.util.MapUtils;
 import info.henrycaldwell.aggregator.error.SpecException;
+import info.henrycaldwell.aggregator.stage.AwsS3Stager;
 import info.henrycaldwell.aggregator.stage.CloudflareR2Stager;
 import info.henrycaldwell.aggregator.stage.NoOpStager;
 import info.henrycaldwell.aggregator.stage.Stager;
+import info.henrycaldwell.aggregator.util.MapUtils;
 
 /**
  * Factory for constructing stagers from configuration.
@@ -43,6 +44,9 @@ public final class StagerFactory {
     switch (type) {
       case "cloudflare-r2" -> {
         return new CloudflareR2Stager(config);
+      }
+      case "aws-s3" -> {
+        return new AwsS3Stager(config);
       }
       case "no_op" -> {
         return new NoOpStager(config);
