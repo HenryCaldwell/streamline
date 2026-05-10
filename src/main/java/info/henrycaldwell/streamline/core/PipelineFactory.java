@@ -1,0 +1,105 @@
+package info.henrycaldwell.streamline.core;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
+
+import info.henrycaldwell.streamline.error.SpecException;
+import info.henrycaldwell.streamline.transform.FpsTransformer;
+import info.henrycaldwell.streamline.transform.MusicTransformer;
+import info.henrycaldwell.streamline.transform.NoOpTransformer;
+import info.henrycaldwell.streamline.transform.Pipeline;
+import info.henrycaldwell.streamline.transform.TextTransformer;
+import info.henrycaldwell.streamline.transform.TitleTransformer;
+import info.henrycaldwell.streamline.transform.Transformer;
+import info.henrycaldwell.streamline.transform.VerticalBlurTransformer;
+import info.henrycaldwell.streamline.transform.WatermarkTransformer;
+import info.henrycaldwell.streamline.util.MapUtils;
+
+/**
+ * Factory for constructing pipelines from configuration.
+ * 
+ * This class validates transformer configuration blocks and assembles them into
+ * an ordered pipeline.
+ */
+public final class PipelineFactory {
+
+  private PipelineFactory() {
+  }
+
+  /**
+   * Builds a pipeline from the given configuration block.
+   *
+   * @param config A {@link Config} representing the pipeline configuration.
+   * @return A {@link Pipeline} representing the configured transformer pipeline.
+   * @throws SpecException if the configuration is invalid or any transformer type
+   *                       is unknown.
+   */
+  public static Pipeline fromConfig(Config config) {
+    if (!config.hasPath("name") || config.getString("name").isBlank()) {
+      throw new SpecException("UNNAMED_PIPELINE", "Missing required key", MapUtils.ofNullable("key", "name"));
+    }
+
+    String pipelineName = config.getString("name");
+
+    if (!config.hasPath("transformers")) {
+      throw new SpecException(pipelineName, "Missing required key", MapUtils.ofNullable("key", "transformers"));
+    }
+
+    List<? extends Config> transformers;
+    try {
+      transformers = config.getConfigList("transformers");
+    } catch (ConfigException.WrongType e) {
+      throw new SpecException(pipelineName, "Incorrect key type (expected list)",
+          MapUtils.ofNullable("key", "transformers"), e);
+    }
+
+    List<Transformer> steps = new ArrayList<>();
+
+    for (int i = 0; i < transformers.size(); i++) {
+      Config transformerConfig = transformers.get(i);
+
+      if (!transformerConfig.hasPath("name") || transformerConfig.getString("name").isBlank()) {
+        throw new SpecException("UNNAMED_TRANSFORMER", "Missing required key", MapUtils.ofNullable("key", "name"));
+      }
+
+      String transformerName = transformerConfig.getString("name");
+
+      if (!transformerConfig.hasPath("type") || transformerConfig.getString("type").isBlank()) {
+        throw new SpecException(transformerName, "Missing required key", MapUtils.ofNullable("key", "type"));
+      }
+
+      String type = transformerConfig.getString("type");
+
+      switch (type) {
+        case "vertical_blur" -> {
+          steps.add(new VerticalBlurTransformer(transformerConfig));
+        }
+        case "fps" -> {
+          steps.add(new FpsTransformer(transformerConfig));
+        }
+        case "watermark" -> {
+          steps.add(new WatermarkTransformer(transformerConfig));
+        }
+        case "music" -> {
+          steps.add(new MusicTransformer(transformerConfig));
+        }
+        case "title" -> {
+          steps.add(new TitleTransformer(transformerConfig));
+        }
+        case "text" -> {
+          steps.add(new TextTransformer(transformerConfig));
+        }
+        case "no_op" -> {
+          steps.add(new NoOpTransformer(transformerConfig));
+        }
+        default ->
+          throw new SpecException(transformerName, "Unknown transformer type", MapUtils.ofNullable("type", type));
+      }
+    }
+
+    return new Pipeline(pipelineName, steps);
+  }
+}

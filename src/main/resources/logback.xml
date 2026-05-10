@@ -5,7 +5,7 @@
     </encoder>
   </appender>
 
-  <logger name="info.henrycaldwell.aggregator" level="INFO" additivity="false">
+  <logger name="info.henrycaldwell.streamline" level="INFO" additivity="false">
     <appender-ref ref="CONSOLE" />
   </logger>
 
