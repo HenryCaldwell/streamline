@@ -1196,7 +1196,7 @@ public class RunnerTest {
     @Override
     public PublishRef publish(MediaRef media) {
       published.incrementAndGet();
-      return new PublishRef(media.clip().id(), null);
+      return new PublishRef(media.clip(), null);
     }
   }
 
@@ -1238,7 +1238,7 @@ public class RunnerTest {
 
     @Override
     public PublishRef publish(MediaRef media) {
-      return new PublishRef(media.clip().id(), null);
+      return new PublishRef(media.clip(), null);
     }
   }
 }

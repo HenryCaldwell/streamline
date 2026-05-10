@@ -9,6 +9,6 @@ import java.net.URI;
  * published to an external platform.
  */
 public record PublishRef(
-    String id,
+    ClipRef clip,
     URI uri) {
 }

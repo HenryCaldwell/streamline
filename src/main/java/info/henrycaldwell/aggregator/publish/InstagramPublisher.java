@@ -112,7 +112,7 @@ public final class InstagramPublisher extends AbstractPublisher {
     String mediaId = publishContainer(containerId);
     String permalink = fetchPermalink(mediaId);
 
-    return new PublishRef(mediaId, URI.create(permalink));
+    return new PublishRef(media.clip(), URI.create(permalink));
   }
 
   /**

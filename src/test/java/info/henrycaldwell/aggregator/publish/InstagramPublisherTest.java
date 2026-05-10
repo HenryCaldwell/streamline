@@ -257,7 +257,7 @@ public class InstagramPublisherTest {
 
       PublishRef result = assertDoesNotThrow(() -> publisher.publish(media));
 
-      assertEquals("media-1", result.id());
+      assertEquals(CLIP, result.clip());
       assertEquals(URI.create("https://www.instagram.com/p/abc/"), result.uri());
     }
 
