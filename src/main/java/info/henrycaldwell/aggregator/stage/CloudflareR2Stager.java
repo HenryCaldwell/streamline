@@ -155,14 +155,14 @@ public final class CloudflareR2Stager extends AbstractStager {
       throw new ComponentException(name, "Stager not started");
     }
 
-    Path src = media.file();
+    Path source = media.file();
 
-    if (src == null || !Files.isRegularFile(src)) {
+    if (source == null || !Files.isRegularFile(source)) {
       throw new ComponentException(name, "Input file missing or not a regular file",
-          MapUtils.ofNullable("sourcePath", src));
+          MapUtils.ofNullable("sourcePath", source));
     }
 
-    String key = src.getFileName().toString();
+    String key = source.getFileName().toString();
 
     try {
       PutObjectRequest request = PutObjectRequest.builder()
@@ -171,10 +171,10 @@ public final class CloudflareR2Stager extends AbstractStager {
           .contentType("video/mp4")
           .build();
 
-      operations.putObject(request, RequestBody.fromFile(src));
+      operations.putObject(request, RequestBody.fromFile(source));
     } catch (Exception e) {
       throw new ComponentException(name, "Failed to upload object to R2",
-          MapUtils.ofNullable("bucket", bucket, "objectKey", key, "sourcePath", src), e);
+          MapUtils.ofNullable("bucket", bucket, "objectKey", key, "sourcePath", source), e);
     }
 
     URI base = URI.create(publicUrl.endsWith("/") ? publicUrl : publicUrl + "/");
@@ -194,20 +194,24 @@ public final class CloudflareR2Stager extends AbstractStager {
       throw new ComponentException(name, "Stager not started");
     }
 
-    if (media == null || media.uri() == null) {
-      return;
+    URI uri = media.uri();
+
+    if (uri == null) {
+      throw new ComponentException(name, "Staged media URI missing", MapUtils.ofNullable("clipId", media.id()));
     }
 
-    URI uri = media.uri();
     String path = uri.getPath();
 
     if (path == null || path.isBlank()) {
-      return;
+      throw new ComponentException(name, "Staged media URI path missing",
+          MapUtils.ofNullable("clipId", media.id(), "uri", uri.toString()));
     }
 
     String key = path.startsWith("/") ? path.substring(1) : path;
+
     if (key.isBlank()) {
-      return;
+      throw new ComponentException(name, "Staged media URI object key empty",
+          MapUtils.ofNullable("clipId", media.id(), "uri", uri.toString()));
     }
 
     try {

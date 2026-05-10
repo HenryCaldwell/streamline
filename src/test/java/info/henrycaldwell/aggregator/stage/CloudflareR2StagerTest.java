@@ -674,41 +674,7 @@ public class CloudflareR2StagerTest {
     }
 
     @Test
-    void doesNothingWhenMediaIsNull() {
-      Config config = ConfigFactory.parseString("""
-          name = stager
-          type = cloudflare-r2
-          accountId = account-1
-          accessKey = key-1
-          secretKey = secret-1
-          bucket = my-bucket
-          publicUrl = "https://cdn.example.com"
-          """);
-      S3Operations operations = new S3Operations() {
-        @Override
-        public void putObject(PutObjectRequest request, RequestBody body) {
-        }
-
-        @Override
-        public void deleteObject(DeleteObjectRequest request) {
-        }
-
-        @Override
-        public void deleteObjects(DeleteObjectsRequest request) {
-        }
-
-        @Override
-        public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
-          return ListObjectsV2Response.builder().isTruncated(false).build();
-        }
-      };
-      CloudflareR2Stager stager = new CloudflareR2Stager(config, operations);
-
-      assertDoesNotThrow(() -> stager.clean(null));
-    }
-
-    @Test
-    void doesNothingWhenUriIsNull() {
+    void throwsWhenUriIsNull() {
       MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
       Config config = ConfigFactory.parseString("""
           name = stager
@@ -739,7 +705,85 @@ public class CloudflareR2StagerTest {
       };
       CloudflareR2Stager stager = new CloudflareR2Stager(config, operations);
 
-      assertDoesNotThrow(() -> stager.clean(media));
+      ComponentException exception = assertThrows(ComponentException.class, () -> stager.clean(media));
+
+      assertTrue(exception.getMessage().contains("Staged media URI missing"));
+    }
+
+    @Test
+    void throwsWhenUriPathIsBlank() {
+      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com"), "Title", "Broadcaster",
+          "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = cloudflare-r2
+          accountId = account-1
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          """);
+      S3Operations operations = new S3Operations() {
+        @Override
+        public void putObject(PutObjectRequest request, RequestBody body) {
+        }
+
+        @Override
+        public void deleteObject(DeleteObjectRequest request) {
+        }
+
+        @Override
+        public void deleteObjects(DeleteObjectsRequest request) {
+        }
+
+        @Override
+        public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
+          return ListObjectsV2Response.builder().isTruncated(false).build();
+        }
+      };
+      CloudflareR2Stager stager = new CloudflareR2Stager(config, operations);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> stager.clean(media));
+
+      assertTrue(exception.getMessage().contains("Staged media URI path missing"));
+    }
+
+    @Test
+    void throwsWhenUriObjectKeyIsEmpty() {
+      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/"), "Title", "Broadcaster",
+          "en", null);
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = cloudflare-r2
+          accountId = account-1
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          """);
+      S3Operations operations = new S3Operations() {
+        @Override
+        public void putObject(PutObjectRequest request, RequestBody body) {
+        }
+
+        @Override
+        public void deleteObject(DeleteObjectRequest request) {
+        }
+
+        @Override
+        public void deleteObjects(DeleteObjectsRequest request) {
+        }
+
+        @Override
+        public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
+          return ListObjectsV2Response.builder().isTruncated(false).build();
+        }
+      };
+      CloudflareR2Stager stager = new CloudflareR2Stager(config, operations);
+
+      ComponentException exception = assertThrows(ComponentException.class, () -> stager.clean(media));
+
+      assertTrue(exception.getMessage().contains("Staged media URI object key empty"));
     }
 
     @Test
