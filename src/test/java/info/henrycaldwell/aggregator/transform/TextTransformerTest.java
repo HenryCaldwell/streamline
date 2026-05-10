@@ -471,23 +471,6 @@ public class TextTransformerTest {
     }
 
     @Test
-    void throwsOnInvalidText() {
-      Config config = ConfigFactory.parseString("""
-          name = transformer
-          type = text
-          ffmpegPath = ffmpeg
-          fontPath = font.ttf
-          text = " "
-          targetWidth = 800
-          """);
-
-      SpecException exception = assertThrows(SpecException.class, () -> new TextTransformer(config));
-
-      assertTrue(exception.getMessage().contains("Invalid key value"));
-      assertTrue(exception.getMessage().contains("key=text"));
-    }
-
-    @Test
     void throwsOnWrongTypeForPosition() {
       Config config = ConfigFactory.parseString("""
           name = transformer

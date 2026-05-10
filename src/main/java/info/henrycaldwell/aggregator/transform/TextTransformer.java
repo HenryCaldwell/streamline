@@ -83,7 +83,8 @@ public final class TextTransformer extends FFmpegTransformer {
    * Constructs a TextTransformer with a custom process factory for testing.
    *
    * @param config  A {@link Config} representing the transformer configuration.
-   * @param factory A {@link ProcessFactory} for creating the transformation subprocess,
+   * @param factory A {@link ProcessFactory} for creating the transformation
+   *                subprocess,
    *                or {@code null} to use the default FFmpeg command.
    * @throws SpecException if the configuration violates the transformer spec.
    */
@@ -91,13 +92,7 @@ public final class TextTransformer extends FFmpegTransformer {
     super(config, SPEC, factory);
 
     this.fontPath = config.getString("fontPath");
-
-    String text = config.getString("text");
-    if (text.isBlank()) {
-      throw new SpecException(name, "Invalid key value (expected text to be a non-blank string)",
-          MapUtils.ofNullable("key", "text", "value", text));
-    }
-    this.text = text;
+    this.text = config.getString("text");
 
     String position = config.hasPath("position") ? config.getString("position") : "center";
     if (!POS.containsKey(position)) {
