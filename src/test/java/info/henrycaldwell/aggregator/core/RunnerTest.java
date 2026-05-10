@@ -985,23 +985,23 @@ public class RunnerTest {
     }
 
     @Override
-    public boolean claim(String id, String runner) {
+    public boolean claim(ClipRef clip, String runner) {
       claimed.incrementAndGet();
       return true;
     }
 
     @Override
-    public void prepare(String id, String runner) {
+    public void prepare(MediaRef media, String runner) {
       prepared.incrementAndGet();
     }
 
     @Override
-    public void publish(String id, String runner) {
+    public void publish(PublishRef ref, String runner, String publisher) {
       published.incrementAndGet();
     }
 
     @Override
-    public void fail(String id, String runner, String error) {
+    public void fail(ClipRef clip, String runner, String error) {
       failed.incrementAndGet();
     }
   }
@@ -1022,20 +1022,20 @@ public class RunnerTest {
     }
 
     @Override
-    public boolean claim(String id, String runner) {
+    public boolean claim(ClipRef clip, String runner) {
       return false;
     }
 
     @Override
-    public void prepare(String id, String runner) {
+    public void prepare(MediaRef media, String runner) {
     }
 
     @Override
-    public void publish(String id, String runner) {
+    public void publish(PublishRef ref, String runner, String publisher) {
     }
 
     @Override
-    public void fail(String id, String runner, String error) {
+    public void fail(ClipRef clip, String runner, String error) {
     }
   }
 

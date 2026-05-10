@@ -12,6 +12,9 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import info.henrycaldwell.aggregator.config.Spec;
+import info.henrycaldwell.aggregator.core.ClipRef;
+import info.henrycaldwell.aggregator.core.MediaRef;
+import info.henrycaldwell.aggregator.core.PublishRef;
 import info.henrycaldwell.aggregator.error.SpecException;
 
 public class AbstractHistoryTest {
@@ -122,20 +125,20 @@ public class AbstractHistoryTest {
     }
 
     @Override
-    public boolean claim(String id, String runner) {
+    public boolean claim(ClipRef clip, String runner) {
       return false;
     }
 
     @Override
-    public void prepare(String id, String runner) {
+    public void prepare(MediaRef media, String runner) {
     }
 
     @Override
-    public void publish(String id, String runner) {
+    public void publish(PublishRef ref, String runner, String publisher) {
     }
 
     @Override
-    public void fail(String id, String runner, String error) {
+    public void fail(ClipRef clip, String runner, String error) {
     }
   }
 }

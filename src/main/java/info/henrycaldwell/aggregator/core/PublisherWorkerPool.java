@@ -153,13 +153,18 @@ public final class PublisherWorkerPool {
           PublishRef ref = publisher.publish(media);
           LOG.info("Published clip (runner={}, publisher={}, clipId={}, URI={}, thread={})",
               context.name(), publisherName, clipId, ref.uri(), Thread.currentThread().getName());
+
+          if (context.history() != null) {
+            context.history().publish(ref, context.name(), publisherName);
+          }
+
           success = true;
         } catch (RuntimeException e) {
           LOG.error("Failed to publish clip (runner={}, publisher={}, clipId={}, thread={})",
               context.name(), publisherName, clipId, Thread.currentThread().getName(), e);
 
           if (context.history() != null) {
-            context.history().fail(clipId, context.name(), e.getMessage());
+            context.history().fail(media.clip(), context.name(), e.getMessage());
           }
         }
       }
@@ -167,10 +172,6 @@ public final class PublisherWorkerPool {
       if (success) {
         failures.set(0);
         published.incrementAndGet();
-
-        if (context.history() != null) {
-          context.history().publish(clipId, context.name());
-        }
       } else {
         reserved.decrementAndGet();
 

@@ -10,9 +10,14 @@ import org.junit.jupiter.api.Test;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
+import info.henrycaldwell.aggregator.core.MediaRef;
+import info.henrycaldwell.aggregator.core.PublishRef;
 import info.henrycaldwell.aggregator.error.SpecException;
 
 public class NoOpHistoryTest {
+
+  private static final ClipRef CLIP = new ClipRef("clip-1", null, null, null, null, 0, null);
 
   @Nested
   class Constructor {
@@ -53,7 +58,7 @@ public class NoOpHistoryTest {
           """);
       NoOpHistory history = new NoOpHistory(config);
 
-      assertTrue(history.claim("clip-1", "runner"));
+      assertTrue(history.claim(CLIP, "runner"));
     }
   }
 
@@ -68,7 +73,7 @@ public class NoOpHistoryTest {
           """);
       NoOpHistory history = new NoOpHistory(config);
 
-      assertDoesNotThrow(() -> history.prepare("clip-1", "runner"));
+      assertDoesNotThrow(() -> history.prepare(new MediaRef(CLIP, null, null), "runner"));
     }
   }
 
@@ -83,7 +88,7 @@ public class NoOpHistoryTest {
           """);
       NoOpHistory history = new NoOpHistory(config);
 
-      assertDoesNotThrow(() -> history.publish("clip-1", "runner"));
+      assertDoesNotThrow(() -> history.publish(new PublishRef(CLIP, null), "runner", "publisher"));
     }
   }
 
@@ -98,7 +103,7 @@ public class NoOpHistoryTest {
           """);
       NoOpHistory history = new NoOpHistory(config);
 
-      assertDoesNotThrow(() -> history.fail("clip-1", "runner", "error message"));
+      assertDoesNotThrow(() -> history.fail(CLIP, "runner", "error message"));
     }
   }
 }

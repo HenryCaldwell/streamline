@@ -20,10 +20,17 @@ import org.junit.jupiter.api.io.TempDir;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
+import info.henrycaldwell.aggregator.core.MediaRef;
+import info.henrycaldwell.aggregator.core.PublishRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
 
 public class SqliteHistoryTest {
+
+  private static final ClipRef CLIP = new ClipRef("clip-1", null, null, null, null, 0, null);
+  private static final MediaRef MEDIA = new MediaRef(CLIP, null, null);
+  private static final PublishRef PUBLISH = new PublishRef(CLIP, null);
 
   @TempDir
   Path tempDir;
@@ -177,7 +184,7 @@ public class SqliteHistoryTest {
           """.formatted(escape(database)));
       SqliteHistory history = new SqliteHistory(config);
 
-      ComponentException exception = assertThrows(ComponentException.class, () -> history.claim("clip-1", "runner"));
+      ComponentException exception = assertThrows(ComponentException.class, () -> history.claim(CLIP, "runner"));
 
       assertTrue(exception.getMessage().contains("History not started"));
     }
@@ -194,7 +201,7 @@ public class SqliteHistoryTest {
       history.start();
 
       try {
-        boolean result = history.claim("clip-1", "runner");
+        boolean result = history.claim(CLIP, "runner");
 
         assertTrue(result);
 
@@ -220,10 +227,10 @@ public class SqliteHistoryTest {
       history.start();
 
       try {
-        history.claim("clip-1", "runner");
-        history.fail("clip-1", "runner", "boom");
+        history.claim(CLIP, "runner");
+        history.fail(CLIP, "runner", "boom");
 
-        boolean result = history.claim("clip-1", "runner");
+        boolean result = history.claim(CLIP, "runner");
 
         assertTrue(result);
 
@@ -249,10 +256,10 @@ public class SqliteHistoryTest {
       history.start();
 
       try {
-        history.claim("clip-1", "runner");
-        history.publish("clip-1", "runner");
+        history.claim(CLIP, "runner");
+        history.publish(PUBLISH, "runner", "publisher");
 
-        boolean result = history.claim("clip-1", "runner");
+        boolean result = history.claim(CLIP, "runner");
 
         assertFalse(result);
         assertEquals("published", row(database, "clip-1", "runner").status());
@@ -275,7 +282,7 @@ public class SqliteHistoryTest {
           """.formatted(escape(database)));
       SqliteHistory history = new SqliteHistory(config);
 
-      ComponentException exception = assertThrows(ComponentException.class, () -> history.prepare("clip-1", "runner"));
+      ComponentException exception = assertThrows(ComponentException.class, () -> history.prepare(MEDIA, "runner"));
 
       assertTrue(exception.getMessage().contains("History not started"));
     }
@@ -292,8 +299,8 @@ public class SqliteHistoryTest {
       history.start();
 
       try {
-        history.claim("clip-1", "runner");
-        history.prepare("clip-1", "runner");
+        history.claim(CLIP, "runner");
+        history.prepare(MEDIA, "runner");
 
         Row row = row(database, "clip-1", "runner");
 
@@ -318,7 +325,7 @@ public class SqliteHistoryTest {
           """.formatted(escape(database)));
       SqliteHistory history = new SqliteHistory(config);
 
-      ComponentException exception = assertThrows(ComponentException.class, () -> history.publish("clip-1", "runner"));
+      ComponentException exception = assertThrows(ComponentException.class, () -> history.publish(PUBLISH, "runner", "publisher"));
 
       assertTrue(exception.getMessage().contains("History not started"));
     }
@@ -335,8 +342,8 @@ public class SqliteHistoryTest {
       history.start();
 
       try {
-        history.claim("clip-1", "runner");
-        history.publish("clip-1", "runner");
+        history.claim(CLIP, "runner");
+        history.publish(PUBLISH, "runner", "publisher");
 
         Row row = row(database, "clip-1", "runner");
 
@@ -363,7 +370,7 @@ public class SqliteHistoryTest {
       SqliteHistory history = new SqliteHistory(config);
 
       ComponentException exception = assertThrows(ComponentException.class,
-          () -> history.fail("clip-1", "runner", "boom"));
+          () -> history.fail(CLIP, "runner", "boom"));
 
       assertTrue(exception.getMessage().contains("History not started"));
     }
@@ -380,8 +387,8 @@ public class SqliteHistoryTest {
       history.start();
 
       try {
-        history.claim("clip-1", "runner");
-        history.fail("clip-1", "runner", "boom");
+        history.claim(CLIP, "runner");
+        history.fail(CLIP, "runner", "boom");
 
         Row row = row(database, "clip-1", "runner");
         assertEquals("failed", row.status());

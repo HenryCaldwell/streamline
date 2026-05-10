@@ -1,5 +1,9 @@
 package info.henrycaldwell.aggregator.history;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
+import info.henrycaldwell.aggregator.core.MediaRef;
+import info.henrycaldwell.aggregator.core.PublishRef;
+
 /**
  * Interface for tracking clips.
  *
@@ -27,37 +31,38 @@ public interface History {
 
   /**
    * Attempts to claim a clip.
-   * 
-   * @param id     A string representing the clip identifier.
+   *
+   * @param clip   A {@link ClipRef} representing the clip to claim.
    * @param runner A string representing the runner name.
    * @return {@code true} if the clip was successfully claimed, {@code false} if
    *         the clip was already published.
    */
-  boolean claim(String id, String runner);
+  boolean claim(ClipRef clip, String runner);
 
   /**
    * Marks a clip as successfully prepared.
-   * 
-   * @param id     A string representing the clip identifier.
+   *
+   * @param media  A {@link MediaRef} representing the prepared media.
    * @param runner A string representing the runner name.
    */
-  void prepare(String id, String runner);
+  void prepare(MediaRef media, String runner);
 
   /**
    * Marks a clip as successfully published.
-   * 
-   * @param id     A string representing the clip identifier.
-   * @param runner A string representing the runner name.
+   *
+   * @param ref       A {@link PublishRef} representing the published clip.
+   * @param runner    A string representing the runner name.
+   * @param publisher A string representing the publisher name.
    */
-  void publish(String id, String runner);
+  void publish(PublishRef ref, String runner, String publisher);
 
   /**
    * Marks a clip as failed.
-   * 
-   * @param id     A string representing the clip identifier.
+   *
+   * @param clip   A {@link ClipRef} representing the failed clip.
    * @param runner A string representing the runner name.
    * @param error  A string representing the human-readable error message, or
    *               {@code null}.
    */
-  void fail(String id, String runner, String error);
+  void fail(ClipRef clip, String runner, String error);
 }

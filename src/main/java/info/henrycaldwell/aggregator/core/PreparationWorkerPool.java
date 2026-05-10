@@ -121,7 +121,7 @@ public final class PreparationWorkerPool {
       String clipId = clip.id();
 
       if (context.history() != null) {
-        boolean claimed = context.history().claim(clipId, context.name());
+        boolean claimed = context.history().claim(clip, context.name());
 
         if (!claimed) {
           LOG.info("Skipping published clip (runner={}, retriever={}, clipId={}, thread={})",
@@ -147,7 +147,7 @@ public final class PreparationWorkerPool {
             context.name(), retrieverName, clipId, Thread.currentThread().getName(), e);
 
         if (context.history() != null) {
-          context.history().fail(clipId, context.name(), e.getMessage());
+          context.history().fail(clip, context.name(), e.getMessage());
         }
 
         int count = failures.incrementAndGet();
@@ -162,7 +162,7 @@ public final class PreparationWorkerPool {
       failures.set(0);
 
       if (context.history() != null) {
-        context.history().prepare(clipId, context.name());
+        context.history().prepare(media, context.name());
       }
 
       LOG.info(

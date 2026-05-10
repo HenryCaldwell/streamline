@@ -11,6 +11,9 @@ import java.time.Instant;
 import com.typesafe.config.Config;
 
 import info.henrycaldwell.aggregator.config.Spec;
+import info.henrycaldwell.aggregator.core.ClipRef;
+import info.henrycaldwell.aggregator.core.MediaRef;
+import info.henrycaldwell.aggregator.core.PublishRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.util.MapUtils;
 
@@ -72,7 +75,8 @@ public final class SqliteHistory extends AbstractHistory {
         create.executeUpdate(createSql);
       }
     } catch (SQLException e) {
-      throw new ComponentException(name, "Failed to open SQLite database", MapUtils.ofNullable("databasePath", databasePath),
+      throw new ComponentException(name, "Failed to open SQLite database",
+          MapUtils.ofNullable("databasePath", databasePath),
           e);
     }
   }
@@ -99,7 +103,7 @@ public final class SqliteHistory extends AbstractHistory {
   /**
    * Attempts to claim a clip in the SQLite history.
    *
-   * @param id     A string representing the clip identifier.
+   * @param clip   A {@link ClipRef} representing the clip to claim.
    * @param runner A string representing the runner name.
    * @return {@code true} if the clip was successfully claimed, {@code false} if
    *         the clip was already published.
@@ -107,7 +111,9 @@ public final class SqliteHistory extends AbstractHistory {
    *                            not started.
    */
   @Override
-  public synchronized boolean claim(String id, String runner) {
+  public synchronized boolean claim(ClipRef clip, String runner) {
+    String id = clip.id();
+
     if (connection == null) {
       throw new ComponentException(name, "History not started");
     }
@@ -166,14 +172,16 @@ public final class SqliteHistory extends AbstractHistory {
 
   /**
    * Marks a clip as successfully prepared in the SQLite history.
-   * 
-   * @param id     A string representing the clip identifier.
+   *
+   * @param media  A {@link MediaRef} representing the prepared media.
    * @param runner A string representing the runner name.
    * @throws ComponentException if the database operation fails or the history is
    *                            not started.
    */
   @Override
-  public synchronized void prepare(String id, String runner) {
+  public synchronized void prepare(MediaRef media, String runner) {
+    String id = media.clip().id();
+
     if (connection == null) {
       throw new ComponentException(name, "History not started");
     }
@@ -198,14 +206,17 @@ public final class SqliteHistory extends AbstractHistory {
 
   /**
    * Marks a clip as successfully published in the SQLite history.
-   * 
-   * @param id     A string representing the clip identifier.
-   * @param runner A string representing the runner name.
+   *
+   * @param ref       A {@link PublishRef} representing the published clip.
+   * @param runner    A string representing the runner name.
+   * @param publisher A string representing the publisher name.
    * @throws ComponentException if the database operation fails or the history is
    *                            not started.
    */
   @Override
-  public synchronized void publish(String id, String runner) {
+  public synchronized void publish(PublishRef ref, String runner, String publisher) {
+    String id = ref.clip().id();
+
     if (connection == null) {
       throw new ComponentException(name, "History not started");
     }
@@ -231,8 +242,8 @@ public final class SqliteHistory extends AbstractHistory {
 
   /**
    * Marks a clip as failed in the SQLite history.
-   * 
-   * @param id     A string representing the clip identifier.
+   *
+   * @param clip   A {@link ClipRef} representing the failed clip.
    * @param runner A string representing the runner name.
    * @param error  A string representing the human-readable error message, or
    *               {@code null}.
@@ -240,7 +251,9 @@ public final class SqliteHistory extends AbstractHistory {
    *                            not started.
    */
   @Override
-  public synchronized void fail(String id, String runner, String error) {
+  public synchronized void fail(ClipRef clip, String runner, String error) {
+    String id = clip.id();
+
     if (connection == null) {
       throw new ComponentException(name, "History not started");
     }
