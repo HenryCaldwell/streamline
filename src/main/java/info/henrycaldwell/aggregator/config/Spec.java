@@ -224,7 +224,9 @@ public final class Spec {
 
     for (String key : requiredStrings) {
       try {
-        config.getString(key);
+        if (config.getString(key).isBlank()) {
+          throw new SpecException(name, "Missing required key", MapUtils.ofNullable("key", key));
+        }
       } catch (ConfigException.WrongType e) {
         throw new SpecException(name, "Incorrect key type (expected string)", MapUtils.ofNullable("key", key), e);
       }

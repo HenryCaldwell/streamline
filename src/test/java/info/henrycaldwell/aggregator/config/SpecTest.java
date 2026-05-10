@@ -64,6 +64,20 @@ public class SpecTest {
       }
 
       @Test
+      void throwsOnBlankRequiredString() {
+        Spec spec = Spec.builder()
+            .requiredString("name")
+            .build();
+
+        Config config = ConfigFactory.parseString("name = \"\"");
+
+        SpecException exception = assertThrows(SpecException.class, () -> spec.validate(config, "test"));
+
+        assertTrue(exception.getMessage().contains("Missing required key"));
+        assertTrue(exception.getMessage().contains("key=name"));
+      }
+
+      @Test
       void throwsOnMissingRequiredNumber() {
         Spec spec = Spec.builder()
             .requiredNumber("count")
