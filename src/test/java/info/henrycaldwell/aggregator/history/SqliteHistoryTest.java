@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -109,9 +110,13 @@ public class SqliteHistoryTest {
 
       history.start();
 
-      try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database);
-          ResultSet result = connection.getMetaData().getTables(null, null, "clips", null)) {
-        assertTrue(result.next());
+      try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database)) {
+        try (ResultSet result = connection.getMetaData().getTables(null, null, "clips", null)) {
+          assertTrue(result.next());
+        }
+        try (ResultSet result = connection.getMetaData().getTables(null, null, "publishes", null)) {
+          assertTrue(result.next());
+        }
       } finally {
         history.stop();
       }
@@ -205,7 +210,7 @@ public class SqliteHistoryTest {
 
         assertTrue(result);
 
-        Row row = row(database, "clip-1", "runner");
+        ClipRow row = clipRow(database, "clip-1", "runner");
 
         assertEquals("claimed", row.status());
         assertEquals(0, row.attempts());
@@ -234,7 +239,7 @@ public class SqliteHistoryTest {
 
         assertTrue(result);
 
-        Row row = row(database, "clip-1", "runner");
+        ClipRow row = clipRow(database, "clip-1", "runner");
 
         assertEquals("claimed", row.status());
         assertEquals(1, row.attempts());
@@ -262,7 +267,7 @@ public class SqliteHistoryTest {
         boolean result = history.claim(CLIP, "runner");
 
         assertFalse(result);
-        assertEquals("published", row(database, "clip-1", "runner").status());
+        assertEquals("published", clipRow(database, "clip-1", "runner").status());
       } finally {
         history.stop();
       }
@@ -302,7 +307,7 @@ public class SqliteHistoryTest {
         history.claim(CLIP, "runner");
         history.prepare(MEDIA, "runner");
 
-        Row row = row(database, "clip-1", "runner");
+        ClipRow row = clipRow(database, "clip-1", "runner");
 
         assertEquals("prepared", row.status());
         assertNotNull(row.preparedAt());
@@ -325,7 +330,8 @@ public class SqliteHistoryTest {
           """.formatted(escape(database)));
       SqliteHistory history = new SqliteHistory(config);
 
-      ComponentException exception = assertThrows(ComponentException.class, () -> history.publish(PUBLISH, "runner", "publisher"));
+      ComponentException exception = assertThrows(ComponentException.class,
+          () -> history.publish(PUBLISH, "runner", "publisher"));
 
       assertTrue(exception.getMessage().contains("History not started"));
     }
@@ -342,14 +348,19 @@ public class SqliteHistoryTest {
       history.start();
 
       try {
+        PublishRef ref = new PublishRef(CLIP, URI.create("https://www.instagram.com/p/abc/"));
         history.claim(CLIP, "runner");
-        history.publish(PUBLISH, "runner", "publisher");
+        history.publish(ref, "runner", "publisher");
 
-        Row row = row(database, "clip-1", "runner");
+        ClipRow row = clipRow(database, "clip-1", "runner");
 
         assertEquals("published", row.status());
         assertEquals(1, row.attempts());
-        assertNotNull(row.publishedAt());
+
+        PublishRow publishRow = publishRow(database, "clip-1", "runner", "publisher");
+
+        assertEquals("https://www.instagram.com/p/abc/", publishRow.uri());
+        assertNotNull(publishRow.publishedAt());
       } finally {
         history.stop();
       }
@@ -390,7 +401,7 @@ public class SqliteHistoryTest {
         history.claim(CLIP, "runner");
         history.fail(CLIP, "runner", "boom");
 
-        Row row = row(database, "clip-1", "runner");
+        ClipRow row = clipRow(database, "clip-1", "runner");
         assertEquals("failed", row.status());
         assertEquals(1, row.attempts());
         assertEquals("boom", row.error());
@@ -404,10 +415,10 @@ public class SqliteHistoryTest {
     return path.toString().replace("\\", "\\\\");
   }
 
-  private static Row row(Path database, String id, String runner) throws Exception {
+  private static ClipRow clipRow(Path database, String id, String runner) throws Exception {
     try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database);
         PreparedStatement statement = connection.prepareStatement("""
-            SELECT status, attempts, error, claimed_at, prepared_at, published_at
+            SELECT status, attempts, error, claimed_at, prepared_at
             FROM clips
             WHERE id = ? AND runner = ?
             """)) {
@@ -417,23 +428,47 @@ public class SqliteHistoryTest {
       try (ResultSet result = statement.executeQuery()) {
         assertTrue(result.next());
 
-        return new Row(
+        return new ClipRow(
             result.getString("status"),
             result.getInt("attempts"),
             result.getString("error"),
             result.getString("claimed_at"),
-            result.getString("prepared_at"),
+            result.getString("prepared_at"));
+      }
+    }
+  }
+
+  private static PublishRow publishRow(Path database, String clipId, String runner, String publisher) throws Exception {
+    try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database);
+        PreparedStatement statement = connection.prepareStatement("""
+            SELECT uri, published_at
+            FROM publishes
+            WHERE id = ? AND runner = ? AND publisher = ?
+            """)) {
+      statement.setString(1, clipId);
+      statement.setString(2, runner);
+      statement.setString(3, publisher);
+
+      try (ResultSet result = statement.executeQuery()) {
+        assertTrue(result.next());
+
+        return new PublishRow(
+            result.getString("uri"),
             result.getString("published_at"));
       }
     }
   }
 
-  private record Row(
+  private record ClipRow(
       String status,
       int attempts,
       String error,
       String claimedAt,
-      String preparedAt,
+      String preparedAt) {
+  }
+
+  private record PublishRow(
+      String uri,
       String publishedAt) {
   }
 }

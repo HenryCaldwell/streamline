@@ -57,22 +57,33 @@ public final class SqliteHistory extends AbstractHistory {
     try {
       connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath);
 
-      String createSql = """
+      String createClipsSql = """
           CREATE TABLE IF NOT EXISTS clips (
-            id           TEXT NOT NULL,
-            runner       TEXT NOT NULL,
-            status       TEXT NOT NULL,
-            attempts     INTEGER NOT NULL DEFAULT 0,
-            error        TEXT,
-            claimed_at   TEXT,
-            prepared_at  TEXT,
-            published_at TEXT,
+            id          TEXT NOT NULL,
+            runner      TEXT NOT NULL,
+            status      TEXT NOT NULL,
+            attempts    INTEGER NOT NULL DEFAULT 0,
+            error       TEXT,
+            claimed_at  TEXT,
+            prepared_at TEXT,
             PRIMARY KEY (id, runner)
           );
           """;
 
+      String createPublishesSql = """
+          CREATE TABLE IF NOT EXISTS publishes (
+            id           TEXT NOT NULL,
+            runner       TEXT NOT NULL,
+            publisher    TEXT NOT NULL,
+            uri          TEXT,
+            published_at TEXT,
+            PRIMARY KEY (id, runner, publisher)
+          );
+          """;
+
       try (Statement create = connection.createStatement()) {
-        create.executeUpdate(createSql);
+        create.executeUpdate(createClipsSql);
+        create.executeUpdate(createPublishesSql);
       }
     } catch (SQLException e) {
       throw new ComponentException(name, "Failed to open SQLite database",
@@ -224,16 +235,30 @@ public final class SqliteHistory extends AbstractHistory {
     String updateSql = """
         UPDATE clips
         SET status = 'published',
-            attempts = attempts + 1,
-            published_at = ?
+            attempts = attempts + 1
         WHERE id = ? AND runner = ?;
         """;
 
-    try (PreparedStatement update = connection.prepareStatement(updateSql)) {
-      update.setString(1, Instant.now().toString());
-      update.setString(2, id);
-      update.setString(3, runner);
-      update.executeUpdate();
+    String insertSql = """
+        INSERT INTO publishes (id, runner, publisher, uri, published_at)
+        VALUES (?, ?, ?, ?, ?);
+        """;
+
+    try {
+      try (PreparedStatement update = connection.prepareStatement(updateSql)) {
+        update.setString(1, id);
+        update.setString(2, runner);
+        update.executeUpdate();
+      }
+
+      try (PreparedStatement insert = connection.prepareStatement(insertSql)) {
+        insert.setString(1, id);
+        insert.setString(2, runner);
+        insert.setString(3, publisher);
+        insert.setString(4, ref.uri() != null ? ref.uri().toString() : null);
+        insert.setString(5, Instant.now().toString());
+        insert.executeUpdate();
+      }
     } catch (SQLException e) {
       throw new ComponentException(name, "Failed to publish in SQLite database",
           MapUtils.ofNullable("databasePath", databasePath, "clipId", id, "runner", runner), e);
