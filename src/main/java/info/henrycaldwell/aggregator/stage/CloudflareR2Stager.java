@@ -66,7 +66,7 @@ public final class CloudflareR2Stager extends AbstractStager {
    *
    * @param config     A {@link Config} representing the stager configuration.
    * @param operations An {@link S3Operations} for dispatching requests, or
-   *                   {@code null} to use the default Cloudflare R2 S3 client.
+   *                   {@code null} to use the default Cloudflare R2 client.
    */
   CloudflareR2Stager(Config config, S3Operations operations) {
     super(config, SPEC);
