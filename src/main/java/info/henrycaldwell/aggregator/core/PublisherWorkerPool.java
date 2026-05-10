@@ -28,6 +28,7 @@ public final class PublisherWorkerPool {
   private final AtomicInteger reserved;
   private final AtomicInteger pending;
   private final AtomicInteger published;
+  private final AtomicInteger failures;
   private final List<Thread> threads;
 
   /**
@@ -42,6 +43,7 @@ public final class PublisherWorkerPool {
     this.reserved = new AtomicInteger(0);
     this.pending = new AtomicInteger(0);
     this.published = new AtomicInteger(0);
+    this.failures = new AtomicInteger(0);
     this.threads = new ArrayList<>();
   }
 
@@ -117,6 +119,11 @@ public final class PublisherWorkerPool {
         break;
       }
 
+      if (failures.get() >= context.failureLimit()) {
+        clean(media);
+        continue;
+      }
+
       int slot = reserved.getAndIncrement();
       if (slot >= context.posts()) {
         reserved.decrementAndGet();
@@ -158,6 +165,7 @@ public final class PublisherWorkerPool {
       }
 
       if (success) {
+        failures.set(0);
         published.incrementAndGet();
 
         if (context.history() != null) {
@@ -165,6 +173,12 @@ public final class PublisherWorkerPool {
         }
       } else {
         reserved.decrementAndGet();
+
+        int count = failures.incrementAndGet();
+        if (count >= context.failureLimit()) {
+          LOG.error("Reached publisher failure limit (runner={}, limit={}, thread={})", context.name(),
+              context.failureLimit(), Thread.currentThread().getName());
+        }
       }
 
       pending.decrementAndGet();

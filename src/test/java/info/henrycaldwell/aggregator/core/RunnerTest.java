@@ -869,6 +869,30 @@ public class RunnerTest {
     // Publishing failure
 
     @Test
+    void abortsAfterConsecutivePublisherFailures() {
+      List<ClipRef> clips = List.of(
+          new ClipRef("clip-1", null, "Title", "Broadcaster", "en", 100, null),
+          new ClipRef("clip-2", null, "Title", "Broadcaster", "en", 90, null),
+          new ClipRef("clip-3", null, "Title", "Broadcaster", "en", 80, null),
+          new ClipRef("clip-4", null, "Title", "Broadcaster", "en", 70, null),
+          new ClipRef("clip-5", null, "Title", "Broadcaster", "en", 60, null));
+      TestRetriever retriever = new TestRetriever(clips);
+      NoOpDownloader downloader = new NoOpDownloader();
+      TrackingThrowingPublisher publisher = new TrackingThrowingPublisher();
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
+          Map.of("r", retriever),
+          null,
+          downloader,
+          Map.of(),
+          null,
+          Map.of("p", publisher));
+
+      Runner.run(context);
+
+      assertEquals(3, publisher.attempts.get());
+    }
+
+    @Test
     void marksHistoryFailedWhenAllPublishersThrow() {
       ClipRef clip = new ClipRef("clip-1", null, "Title", "Broadcaster", "en", 100, null);
       TestRetriever retriever = new TestRetriever(List.of(clip));
@@ -1185,6 +1209,22 @@ public class RunnerTest {
 
     @Override
     public PublishRef publish(MediaRef media) {
+      throw new RuntimeException("publish failed");
+    }
+  }
+
+  private static final class TrackingThrowingPublisher implements Publisher {
+
+    private final AtomicInteger attempts = new AtomicInteger();
+
+    @Override
+    public String getName() {
+      return "tracking_throwing_publisher";
+    }
+
+    @Override
+    public PublishRef publish(MediaRef media) {
+      attempts.incrementAndGet();
       throw new RuntimeException("publish failed");
     }
   }
