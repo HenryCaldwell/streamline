@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ public final class PreparationWorkerPool {
   private final RunnerContext context;
   private final PublisherWorkerPool publisherPool;
   private final PriorityBlockingQueue<Candidate> queue;
+  private final AtomicInteger failures;
   private final List<Thread> threads;
 
   /**
@@ -40,6 +42,7 @@ public final class PreparationWorkerPool {
     this.context = context;
     this.publisherPool = publisherPool;
     this.queue = new PriorityBlockingQueue<>();
+    this.failures = new AtomicInteger();
     this.threads = new ArrayList<>();
   }
 
@@ -105,7 +108,7 @@ public final class PreparationWorkerPool {
         break;
       }
 
-      if (publisherPool.getPublished() >= context.posts()) {
+      if (failures.get() >= context.failureLimit() || publisherPool.getPublished() >= context.posts()) {
         continue;
       }
 
@@ -147,8 +150,16 @@ public final class PreparationWorkerPool {
           context.history().fail(clipId, context.name(), e.getMessage());
         }
 
+        int count = failures.incrementAndGet();
+        if (count >= context.failureLimit()) {
+          LOG.error("Reached preparation failure limit (runner={}, limit={}, thread={})",
+              context.name(), context.failureLimit(), Thread.currentThread().getName());
+        }
+
         continue;
       }
+
+      failures.set(0);
 
       if (context.history() != null) {
         context.history().prepare(clipId, context.name());

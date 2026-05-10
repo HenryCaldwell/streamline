@@ -22,6 +22,7 @@ record RunnerContext(
     Path workDir,
     int preparationThreads,
     int publisherThreads,
+    int failureLimit,
     Map<String, Retriever> retrievers,
     History history,
     Downloader downloader,

@@ -536,7 +536,7 @@ public class RunnerTest {
       TestRetriever retriever = new TestRetriever(clips);
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -555,7 +555,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingStager tracker = new TrackingStager();
       NoOpPublisher publisher = new NoOpPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -575,7 +575,7 @@ public class RunnerTest {
       TestRetriever retriever = new TestRetriever(List.of());
       NoOpDownloader downloader = new NoOpDownloader();
       NoOpPublisher publisher = new NoOpPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -595,7 +595,7 @@ public class RunnerTest {
       TestRetriever r2 = new TestRetriever(List.of(clip));
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r1", r1, "r2", r2),
           null,
           downloader,
@@ -619,7 +619,7 @@ public class RunnerTest {
       TestRetriever retriever = new TestRetriever(clips);
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 2, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 2, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -639,7 +639,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       ThrowingPublisher throwing = new ThrowingPublisher();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -659,7 +659,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       Pipeline pipeline = new Pipeline("test-pipeline", List.of());
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -679,7 +679,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       NoOpStager stager = new NoOpStager();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -699,7 +699,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingHistory history = new TrackingHistory();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           history,
           downloader,
@@ -723,7 +723,7 @@ public class RunnerTest {
       ThrowingRetriever retriever = new ThrowingRetriever();
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -743,7 +743,7 @@ public class RunnerTest {
       RejectingHistory history = new RejectingHistory();
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           history,
           downloader,
@@ -764,7 +764,7 @@ public class RunnerTest {
       TestRetriever retriever = new TestRetriever(List.of(clip));
       ThrowingDownloader downloader = new ThrowingDownloader();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -784,7 +784,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       Pipeline pipeline = new Pipeline("test-pipeline", List.of(new ThrowingTransformer()));
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -804,7 +804,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       ThrowingStager stager = new ThrowingStager();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           null,
           downloader,
@@ -818,13 +818,38 @@ public class RunnerTest {
     }
 
     @Test
+    void abortsAfterConsecutivePreparationFailures() {
+      List<ClipRef> clips = List.of(
+          new ClipRef("clip-1", null, "Title", "Broadcaster", "en", 100, null),
+          new ClipRef("clip-2", null, "Title", "Broadcaster", "en", 90, null),
+          new ClipRef("clip-3", null, "Title", "Broadcaster", "en", 80, null),
+          new ClipRef("clip-4", null, "Title", "Broadcaster", "en", 70, null),
+          new ClipRef("clip-5", null, "Title", "Broadcaster", "en", 60, null));
+      TestRetriever retriever = new TestRetriever(clips);
+      TrackingThrowingDownloader trackerThrower = new TrackingThrowingDownloader();
+      TrackingPublisher tracker = new TrackingPublisher();
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
+          Map.of("r", retriever),
+          null,
+          trackerThrower,
+          Map.of(),
+          null,
+          Map.of("p", tracker));
+
+      Runner.run(context);
+
+      assertEquals(3, trackerThrower.attempts.get());
+      assertEquals(0, tracker.published.get());
+    }
+
+    @Test
     void marksHistoryFailedWhenDownloadThrows() {
       ClipRef clip = new ClipRef("clip-1", null, "Title", "Broadcaster", "en", 100, null);
       TestRetriever retriever = new TestRetriever(List.of(clip));
       ThrowingDownloader downloader = new ThrowingDownloader();
       TrackingHistory history = new TrackingHistory();
       TrackingPublisher tracker = new TrackingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           history,
           downloader,
@@ -850,7 +875,7 @@ public class RunnerTest {
       NoOpDownloader downloader = new NoOpDownloader();
       TrackingHistory history = new TrackingHistory();
       ThrowingPublisher publisher = new ThrowingPublisher();
-      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1, 3,
           Map.of("r", retriever),
           history,
           downloader,
@@ -999,6 +1024,22 @@ public class RunnerTest {
 
     @Override
     public MediaRef download(ClipRef clip, Path target) {
+      throw new RuntimeException("download failed");
+    }
+  }
+
+  private static final class TrackingThrowingDownloader implements Downloader {
+
+    private final AtomicInteger attempts = new AtomicInteger();
+
+    @Override
+    public String getName() {
+      return "tracking_throwing_downloader";
+    }
+
+    @Override
+    public MediaRef download(ClipRef clip, Path target) {
+      attempts.incrementAndGet();
       throw new RuntimeException("download failed");
     }
   }

@@ -90,12 +90,13 @@ public final class Runner {
    */
   public static void run(RunnerContext context) {
     LOG.info(
-        "Built runner context (runner={}, posts={}, workDir={}, preparationThreads={}, publisherThreads={}, retrievers={}, history={}, downloader={}, pipelines={}, stager={}, publishers={})",
+        "Built runner context (runner={}, posts={}, workDir={}, preparationThreads={}, publisherThreads={}, failureLimit={}, retrievers={}, history={}, downloader={}, pipelines={}, stager={}, publishers={})",
         context.name(),
         context.posts(),
         context.workDir(),
         context.preparationThreads(),
         context.publisherThreads(),
+        context.failureLimit(),
         context.retrievers().keySet(),
         context.history() != null ? context.history().getName() : null,
         context.downloader().getName(),
@@ -204,6 +205,12 @@ public final class Runner {
           MapUtils.ofNullable("key", "publisherThreads", "value", publisherThreads));
     }
 
+    int failureLimit = root.hasPath("failureLimit") ? root.getInt("failureLimit") : 3;
+    if (failureLimit <= 0) {
+      throw new SpecException(name, "Invalid key value (expected failureLimit to be greater than 0)",
+          MapUtils.ofNullable("key", "failureLimit", "value", failureLimit));
+    }
+
     Map<String, Retriever> retrievers = buildRetrievers(root);
     History history = buildHistory(root);
     Downloader downloader = buildDownloader(root);
@@ -241,6 +248,7 @@ public final class Runner {
         workDir,
         preparationThreads,
         publisherThreads,
+        failureLimit,
         retrievers,
         history,
         downloader,
