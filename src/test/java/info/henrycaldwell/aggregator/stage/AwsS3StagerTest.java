@@ -35,6 +35,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 public class AwsS3StagerTest {
 
+  private static final ClipRef CLIP = new ClipRef(null, null, null, null, null, 0, null);
+
   @TempDir
   Path tempDir;
 
@@ -50,6 +52,21 @@ public class AwsS3StagerTest {
           secretKey = secret-1
           bucket = my-bucket
           publicUrl = "https://cdn.example.com"
+          """);
+
+      assertDoesNotThrow(() -> new AwsS3Stager(config));
+    }
+
+    @Test
+    void acceptsConfiguredDirectory() {
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = aws-s3
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = clips
           """);
 
       assertDoesNotThrow(() -> new AwsS3Stager(config));
@@ -200,6 +217,24 @@ public class AwsS3StagerTest {
 
       assertTrue(exception.getMessage().contains("Incorrect key type (expected string)"));
       assertTrue(exception.getMessage().contains("key=publicUrl"));
+    }
+
+    @Test
+    void throwsOnWrongTypeForDirectory() {
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = aws-s3
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = [clips]
+          """);
+
+      SpecException exception = assertThrows(SpecException.class, () -> new AwsS3Stager(config));
+
+      assertTrue(exception.getMessage().contains("Incorrect key type (expected string)"));
+      assertTrue(exception.getMessage().contains("key=directory"));
     }
 
     @Test
@@ -361,6 +396,47 @@ public class AwsS3StagerTest {
       MediaRef result = assertDoesNotThrow(() -> stager.apply(media));
 
       assertEquals(URI.create("https://cdn.example.com/clip.mp4"), result.uri());
+      assertNull(result.file());
+    }
+
+    @Test
+    void returnsMediaRefWithDirectoryPrefixedUriOnSuccess() throws IOException {
+      Path source = tempDir.resolve("clip.mp4");
+      Files.writeString(source, "data");
+
+      MediaRef media = new MediaRef(null, source, null);
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = aws-s3
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = clips
+          """);
+      S3Operations operations = new S3Operations() {
+        @Override
+        public void putObject(PutObjectRequest request, RequestBody body) {
+        }
+
+        @Override
+        public void deleteObject(DeleteObjectRequest request) {
+        }
+
+        @Override
+        public void deleteObjects(DeleteObjectsRequest request) {
+        }
+
+        @Override
+        public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
+          return ListObjectsV2Response.builder().isTruncated(false).build();
+        }
+      };
+      AwsS3Stager stager = new AwsS3Stager(config, operations);
+
+      MediaRef result = assertDoesNotThrow(() -> stager.apply(media));
+
+      assertEquals(URI.create("https://cdn.example.com/clips/clip.mp4"), result.uri());
       assertNull(result.file());
     }
 
@@ -582,7 +658,7 @@ public class AwsS3StagerTest {
 
     @Test
     void throwsWhenUriIsNull() {
-      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, null);
+      MediaRef media = new MediaRef(CLIP, null, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = aws-s3
@@ -618,7 +694,8 @@ public class AwsS3StagerTest {
 
     @Test
     void throwsWhenUriPathIsBlank() {
-      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, URI.create("https://cdn.example.com"));
+      MediaRef media = new MediaRef(CLIP, null,
+          URI.create("https://cdn.example.com"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = aws-s3
@@ -654,7 +731,8 @@ public class AwsS3StagerTest {
 
     @Test
     void throwsWhenUriObjectKeyIsEmpty() {
-      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, URI.create("https://cdn.example.com/"));
+      MediaRef media = new MediaRef(CLIP, null,
+          URI.create("https://cdn.example.com/"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = aws-s3
@@ -875,6 +953,45 @@ public class AwsS3StagerTest {
 
       assertDoesNotThrow(() -> stager.purge());
       assertFalse(deleteObjectsCalled[0]);
+    }
+
+    @Test
+    void scopesListToDirectoryPrefixWhenConfigured() {
+      String[] capturedPrefix = { null };
+
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = aws-s3
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = clips
+          """);
+      S3Operations operations = new S3Operations() {
+        @Override
+        public void putObject(PutObjectRequest request, RequestBody body) {
+        }
+
+        @Override
+        public void deleteObject(DeleteObjectRequest request) {
+        }
+
+        @Override
+        public void deleteObjects(DeleteObjectsRequest request) {
+        }
+
+        @Override
+        public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
+          capturedPrefix[0] = request.prefix();
+          return ListObjectsV2Response.builder().isTruncated(false).build();
+        }
+      };
+      AwsS3Stager stager = new AwsS3Stager(config, operations);
+
+      assertDoesNotThrow(() -> stager.purge());
+
+      assertEquals("clips/", capturedPrefix[0]);
     }
 
     @Test

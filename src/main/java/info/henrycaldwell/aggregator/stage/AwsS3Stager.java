@@ -36,7 +36,7 @@ public final class AwsS3Stager extends AbstractStager {
 
   public static final Spec SPEC = Spec.builder()
       .requiredString("accessKey", "secretKey", "bucket", "publicUrl")
-      .optionalString("region")
+      .optionalString("directory", "region")
       .build();
 
   private S3Client s3;
@@ -47,6 +47,7 @@ public final class AwsS3Stager extends AbstractStager {
   private final String bucket;
   private final String publicUrl;
 
+  private final String directory;
   private final String region;
 
   /**
@@ -72,6 +73,9 @@ public final class AwsS3Stager extends AbstractStager {
     this.secretKey = config.getString("secretKey");
     this.bucket = config.getString("bucket");
     this.publicUrl = config.getString("publicUrl");
+    this.directory = config.hasPath("directory")
+        ? config.getString("directory").strip().replaceAll("^/+|/+$", "")
+        : null;
     this.region = config.hasPath("region") ? config.getString("region") : "us-east-1";
     this.operations = operations;
   }
@@ -148,7 +152,8 @@ public final class AwsS3Stager extends AbstractStager {
           MapUtils.ofNullable("sourcePath", source));
     }
 
-    String key = source.getFileName().toString();
+    String filename = source.getFileName().toString();
+    String key = directory != null ? directory + "/" + filename : filename;
 
     try {
       PutObjectRequest request = PutObjectRequest.builder()
@@ -232,6 +237,7 @@ public final class AwsS3Stager extends AbstractStager {
       try {
         response = operations.listObjectsV2(ListObjectsV2Request.builder()
             .bucket(bucket)
+            .prefix(directory != null ? directory + "/" : null)
             .continuationToken(cursor)
             .build());
       } catch (Exception e) {
