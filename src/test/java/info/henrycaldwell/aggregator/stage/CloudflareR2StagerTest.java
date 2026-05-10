@@ -35,6 +35,8 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 
 public class CloudflareR2StagerTest {
 
+  private static final ClipRef CLIP = new ClipRef(null, null, null, null, null, 0, null);
+
   @TempDir
   Path tempDir;
 
@@ -51,6 +53,22 @@ public class CloudflareR2StagerTest {
           secretKey = secret-1
           bucket = my-bucket
           publicUrl = "https://cdn.example.com"
+          """);
+
+      assertDoesNotThrow(() -> new CloudflareR2Stager(config));
+    }
+
+    @Test
+    void acceptsConfiguredDirectory() {
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = cloudflare-r2
+          accountId = account-1
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = clips
           """);
 
       assertDoesNotThrow(() -> new CloudflareR2Stager(config));
@@ -264,6 +282,25 @@ public class CloudflareR2StagerTest {
     }
 
     @Test
+    void throwsOnWrongTypeForDirectory() {
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = cloudflare-r2
+          accountId = account-1
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = [clips]
+          """);
+
+      SpecException exception = assertThrows(SpecException.class, () -> new CloudflareR2Stager(config));
+
+      assertTrue(exception.getMessage().contains("Incorrect key type (expected string)"));
+      assertTrue(exception.getMessage().contains("key=directory"));
+    }
+
+    @Test
     void throwsOnWrongTypeForRegion() {
       Config config = ConfigFactory.parseString("""
           name = stager
@@ -448,6 +485,48 @@ public class CloudflareR2StagerTest {
       MediaRef result = assertDoesNotThrow(() -> stager.apply(media));
 
       assertEquals(URI.create("https://cdn.example.com/clip.mp4"), result.uri());
+      assertNull(result.file());
+    }
+
+    @Test
+    void returnsMediaRefWithDirectoryPrefixedUriOnSuccess() throws IOException {
+      Path source = tempDir.resolve("clip.mp4");
+      Files.writeString(source, "data");
+
+      MediaRef media = new MediaRef(null, source, null);
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = cloudflare-r2
+          accountId = account-1
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = clips
+          """);
+      S3Operations operations = new S3Operations() {
+        @Override
+        public void putObject(PutObjectRequest request, RequestBody body) {
+        }
+
+        @Override
+        public void deleteObject(DeleteObjectRequest request) {
+        }
+
+        @Override
+        public void deleteObjects(DeleteObjectsRequest request) {
+        }
+
+        @Override
+        public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
+          return ListObjectsV2Response.builder().isTruncated(false).build();
+        }
+      };
+      CloudflareR2Stager stager = new CloudflareR2Stager(config, operations);
+
+      MediaRef result = assertDoesNotThrow(() -> stager.apply(media));
+
+      assertEquals(URI.create("https://cdn.example.com/clips/clip.mp4"), result.uri());
       assertNull(result.file());
     }
 
@@ -675,7 +754,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenUriIsNull() {
-      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, null);
+      MediaRef media = new MediaRef(CLIP, null, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -712,7 +791,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenUriPathIsBlank() {
-      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, URI.create("https://cdn.example.com"));
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -749,7 +828,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenUriObjectKeyIsEmpty() {
-      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, URI.create("https://cdn.example.com/"));
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -976,6 +1055,46 @@ public class CloudflareR2StagerTest {
 
       assertDoesNotThrow(() -> stager.purge());
       assertFalse(deleteObjectsCalled[0]);
+    }
+
+    @Test
+    void scopesListToDirectoryPrefixWhenConfigured() {
+      String[] capturedPrefix = { null };
+
+      Config config = ConfigFactory.parseString("""
+          name = stager
+          type = cloudflare-r2
+          accountId = account-1
+          accessKey = key-1
+          secretKey = secret-1
+          bucket = my-bucket
+          publicUrl = "https://cdn.example.com"
+          directory = clips
+          """);
+      S3Operations operations = new S3Operations() {
+        @Override
+        public void putObject(PutObjectRequest request, RequestBody body) {
+        }
+
+        @Override
+        public void deleteObject(DeleteObjectRequest request) {
+        }
+
+        @Override
+        public void deleteObjects(DeleteObjectsRequest request) {
+        }
+
+        @Override
+        public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
+          capturedPrefix[0] = request.prefix();
+          return ListObjectsV2Response.builder().isTruncated(false).build();
+        }
+      };
+      CloudflareR2Stager stager = new CloudflareR2Stager(config, operations);
+
+      assertDoesNotThrow(() -> stager.purge());
+
+      assertEquals("clips/", capturedPrefix[0]);
     }
 
     @Test

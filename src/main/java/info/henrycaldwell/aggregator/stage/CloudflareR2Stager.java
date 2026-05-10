@@ -37,7 +37,7 @@ public final class CloudflareR2Stager extends AbstractStager {
 
   public static final Spec SPEC = Spec.builder()
       .requiredString("accountId", "accessKey", "secretKey", "bucket", "publicUrl")
-      .optionalString("region", "endpoint")
+      .optionalString("directory", "region", "endpoint")
       .build();
 
   private S3Client s3;
@@ -49,6 +49,7 @@ public final class CloudflareR2Stager extends AbstractStager {
   private final String bucket;
   private final String publicUrl;
 
+  private final String directory;
   private final String region;
   private final String endpoint;
 
@@ -76,6 +77,9 @@ public final class CloudflareR2Stager extends AbstractStager {
     this.secretKey = config.getString("secretKey");
     this.bucket = config.getString("bucket");
     this.publicUrl = config.getString("publicUrl");
+    this.directory = config.hasPath("directory")
+        ? config.getString("directory").strip().replaceAll("^/+|/+$", "")
+        : null;
     this.region = config.hasPath("region") ? config.getString("region") : "auto";
     this.endpoint = config.hasPath("endpoint")
         ? config.getString("endpoint")
@@ -162,7 +166,8 @@ public final class CloudflareR2Stager extends AbstractStager {
           MapUtils.ofNullable("sourcePath", source));
     }
 
-    String key = source.getFileName().toString();
+    String filename = source.getFileName().toString();
+    String key = directory != null ? directory + "/" + filename : filename;
 
     try {
       PutObjectRequest request = PutObjectRequest.builder()
@@ -246,6 +251,7 @@ public final class CloudflareR2Stager extends AbstractStager {
       try {
         response = operations.listObjectsV2(ListObjectsV2Request.builder()
             .bucket(bucket)
+            .prefix(directory != null ? directory + "/" : null)
             .continuationToken(cursor)
             .build());
       } catch (Exception e) {
