@@ -1,5 +1,6 @@
 package info.henrycaldwell.aggregator.core;
 
+import java.nio.file.Path;
 import java.util.Map;
 
 import info.henrycaldwell.aggregator.download.Downloader;
@@ -18,6 +19,7 @@ import info.henrycaldwell.aggregator.transform.Pipeline;
 record RunnerContext(
     String name,
     int posts,
+    Path workDir,
     int preparationThreads,
     int publisherThreads,
     Map<String, Retriever> retrievers,

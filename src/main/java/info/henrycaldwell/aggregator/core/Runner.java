@@ -1,6 +1,8 @@
 package info.henrycaldwell.aggregator.core;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -85,9 +87,10 @@ public final class Runner {
    */
   public static void run(RunnerContext context) {
     LOG.info(
-        "Built runner context (runner={}, posts={}, preparationThreads={}, publisherThreads={}, retrievers={}, history={}, downloader={}, pipelines={}, stager={}, publishers={})",
+        "Built runner context (runner={}, posts={}, workDir={}, preparationThreads={}, publisherThreads={}, retrievers={}, history={}, downloader={}, pipelines={}, stager={}, publishers={})",
         context.name(),
         context.posts(),
+        context.workDir(),
         context.preparationThreads(),
         context.publisherThreads(),
         context.retrievers().keySet(),
@@ -162,6 +165,12 @@ public final class Runner {
           MapUtils.ofNullable("key", "posts", "value", posts));
     }
 
+    if (!root.hasPath("workDir") || root.getString("workDir").isBlank()) {
+      throw new SpecException(name, "Missing required key", MapUtils.ofNullable("key", "workDir"));
+    }
+
+    Path workDir = Paths.get(root.getString("workDir"));
+
     int preparationThreads = root.hasPath("preparationThreads") ? root.getInt("preparationThreads") : 1;
     if (preparationThreads <= 0) {
       throw new SpecException(name, "Invalid key value (expected preparationThreads to be greater than 0)",
@@ -208,6 +217,7 @@ public final class Runner {
     return new RunnerContext(
         name,
         posts,
+        workDir,
         preparationThreads,
         publisherThreads,
         retrievers,

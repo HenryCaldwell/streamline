@@ -1,7 +1,6 @@
 package info.henrycaldwell.aggregator.core;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -130,7 +129,7 @@ public final class PreparationWorkerPool {
 
       MediaRef media;
       try {
-        Path target = Paths.get("work", clipId + ".mp4");
+        Path target = context.workDir().resolve(clipId + ".mp4");
         media = context.downloader().download(clip, target);
 
         if (pipeline != null) {
