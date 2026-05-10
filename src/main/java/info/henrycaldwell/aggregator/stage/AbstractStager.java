@@ -110,6 +110,14 @@ public abstract class AbstractStager implements Stager {
   }
 
   /**
+   * Purges all staged resources.
+   */
+  @Override
+  public void purge() {
+    // No-op by default
+  }
+
+  /**
    * Applies a subclass-specific staging.
    *
    * @param media A {@link MediaRef} representing the media to stage.

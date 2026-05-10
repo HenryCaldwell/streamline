@@ -2,6 +2,9 @@ package info.henrycaldwell.aggregator.stage;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
@@ -26,4 +29,19 @@ interface S3Operations {
    * @param request A {@link DeleteObjectRequest} representing the delete request.
    */
   void deleteObject(DeleteObjectRequest request);
+
+  /**
+   * Deletes multiple objects from a bucket.
+   *
+   * @param request A {@link DeleteObjectsRequest} representing the batch delete request.
+   */
+  void deleteObjects(DeleteObjectsRequest request);
+
+  /**
+   * Lists objects in a bucket.
+   *
+   * @param request A {@link ListObjectsV2Request} representing the list request.
+   * @return A {@link ListObjectsV2Response} representing the listed objects.
+   */
+  ListObjectsV2Response listObjectsV2(ListObjectsV2Request request);
 }

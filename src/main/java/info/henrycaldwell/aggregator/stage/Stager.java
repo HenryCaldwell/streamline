@@ -41,4 +41,9 @@ public interface Stager {
    * @param media A {@link MediaRef} representing the staged media.
    */
   void clean(MediaRef media);
+
+  /**
+   * Purges all staged resources.
+   */
+  void purge();
 }

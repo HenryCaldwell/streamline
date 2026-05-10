@@ -3,6 +3,8 @@ package info.henrycaldwell.aggregator.stage;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.typesafe.config.Config;
 
@@ -16,8 +18,14 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * Class for staging media via Cloudflare R2 object storage.
@@ -107,6 +115,16 @@ public final class CloudflareR2Stager extends AbstractStager {
       @Override
       public void deleteObject(DeleteObjectRequest request) {
         s3.deleteObject(request);
+      }
+
+      @Override
+      public void deleteObjects(DeleteObjectsRequest request) {
+        s3.deleteObjects(request);
+      }
+
+      @Override
+      public ListObjectsV2Response listObjectsV2(ListObjectsV2Request request) {
+        return s3.listObjectsV2(request);
       }
     };
   }
@@ -203,5 +221,55 @@ public final class CloudflareR2Stager extends AbstractStager {
       throw new ComponentException(name, "Failed to delete object from R2",
           MapUtils.ofNullable("bucket", bucket, "objectKey", key, "uri", uri.toString()), e);
     }
+  }
+
+  /**
+   * Deletes all staged resources from Cloudflare R2.
+   *
+   * @throws ComponentException if deletion fails at any step.
+   */
+  @Override
+  public void purge() {
+    if (operations == null) {
+      throw new ComponentException(name, "Stager not started");
+    }
+
+    String cursor = null;
+
+    do {
+      ListObjectsV2Response response;
+
+      try {
+        response = operations.listObjectsV2(ListObjectsV2Request.builder()
+            .bucket(bucket)
+            .continuationToken(cursor)
+            .build());
+      } catch (Exception e) {
+        throw new ComponentException(name, "Failed to list objects in R2", MapUtils.ofNullable("bucket", bucket), e);
+      }
+
+      List<S3Object> objects = response.contents();
+
+      if (!objects.isEmpty()) {
+        List<ObjectIdentifier> identifiers = objects.stream()
+            .map(o -> ObjectIdentifier.builder().key(o.key()).build())
+            .collect(Collectors.toList());
+
+        Delete delete = Delete.builder().objects(identifiers).build();
+        DeleteObjectsRequest request = DeleteObjectsRequest.builder()
+            .bucket(bucket)
+            .delete(delete)
+            .build();
+
+        try {
+          operations.deleteObjects(request);
+        } catch (Exception e) {
+          throw new ComponentException(name, "Failed to delete objects from R2", MapUtils.ofNullable("bucket", bucket),
+              e);
+        }
+      }
+
+      cursor = response.nextContinuationToken();
+    } while (cursor != null);
   }
 }
