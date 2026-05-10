@@ -2,9 +2,12 @@ package info.henrycaldwell.aggregator.core;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -200,6 +203,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           preparationThreads = 0
           """);
 
@@ -215,6 +219,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           publisherThreads = 0
           """);
 
@@ -230,6 +235,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           retrievers = invalid
           """);
 
@@ -244,6 +250,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           history = invalid
           """);
 
@@ -258,6 +265,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           downloader = invalid
           """);
 
@@ -272,6 +280,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           pipelines = invalid
           """);
 
@@ -286,6 +295,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           stager = invalid
           """);
 
@@ -300,6 +310,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           publishers = invalid
           """);
 
@@ -314,6 +325,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           """);
 
       SpecException exception = assertThrows(SpecException.class, () -> Runner.run(config));
@@ -327,6 +339,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           retrievers = [
             {
               name = test_retriever
@@ -349,6 +362,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           retrievers = [
             {
               name = test_retriever
@@ -376,6 +390,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           retrievers = [
             { name = r, type = twitch, clientId = c, token = t, gameId = g }
             { name = r, type = twitch, clientId = c, token = t, gameId = g }
@@ -393,6 +408,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           pipelines = [
             { name = p, transformers = [] }
             { name = p, transformers = [] }
@@ -410,6 +426,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           publishers = [
             { name = p, type = no_op }
             { name = p, type = no_op }
@@ -427,6 +444,7 @@ public class RunnerTest {
       Config config = ConfigFactory.parseString("""
           name = test_runner
           posts = 5
+          workDir = work
           retrievers = [
             {
               name = test_retriever
@@ -529,6 +547,45 @@ public class RunnerTest {
       Runner.run(context);
 
       assertEquals(2, tracker.published.get());
+    }
+
+    @Test
+    void purgesStagerOnStart() {
+      TestRetriever retriever = new TestRetriever(List.of());
+      NoOpDownloader downloader = new NoOpDownloader();
+      TrackingStager tracker = new TrackingStager();
+      NoOpPublisher publisher = new NoOpPublisher();
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+          Map.of("r", retriever),
+          null,
+          downloader,
+          Map.of(),
+          tracker,
+          Map.of("p", publisher));
+
+      Runner.run(context);
+
+      assertEquals(1, tracker.purged.get());
+    }
+
+    @Test
+    void purgesWorkDirectoryOnStart() throws IOException {
+      Path orphan = workDir.resolve("orphaned.mp4");
+      Files.createFile(orphan);
+      TestRetriever retriever = new TestRetriever(List.of());
+      NoOpDownloader downloader = new NoOpDownloader();
+      NoOpPublisher publisher = new NoOpPublisher();
+      RunnerContext context = new RunnerContext("test", 5, workDir, 1, 1,
+          Map.of("r", retriever),
+          null,
+          downloader,
+          Map.of(),
+          null,
+          Map.of("p", publisher));
+
+      Runner.run(context);
+
+      assertFalse(Files.exists(orphan));
     }
 
     @Test
@@ -858,132 +915,6 @@ public class RunnerTest {
     }
   }
 
-  private static final class NoOpDownloader implements Downloader {
-
-    @Override
-    public String getName() {
-      return "no_op_downloader";
-    }
-
-    @Override
-    public MediaRef download(ClipRef clip, Path target) {
-      return new MediaRef(clip.id(), target, null, null, null, null, null);
-    }
-  }
-
-  private static final class ThrowingDownloader implements Downloader {
-
-    @Override
-    public String getName() {
-      return "throwing_downloader";
-    }
-
-    @Override
-    public MediaRef download(ClipRef clip, Path target) {
-      throw new RuntimeException("download failed");
-    }
-  }
-
-  private static final class ThrowingTransformer implements Transformer {
-
-    @Override
-    public String getName() {
-      return "throwing_transformer";
-    }
-
-    @Override
-    public MediaRef transform(MediaRef media) {
-      throw new RuntimeException("transform failed");
-    }
-  }
-
-  private static final class NoOpStager implements Stager {
-
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
-    }
-
-    @Override
-    public String getName() {
-      return "no_op_stager";
-    }
-
-    @Override
-    public MediaRef stage(MediaRef media) {
-      return media;
-    }
-
-    @Override
-    public void clean(MediaRef media) {
-    }
-
-    @Override
-    public void purge() {
-    }
-  }
-
-  private static final class ThrowingStager implements Stager {
-
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
-    }
-
-    @Override
-    public String getName() {
-      return "throwing_stager";
-    }
-
-    @Override
-    public MediaRef stage(MediaRef media) {
-      throw new RuntimeException("stage failed");
-    }
-
-    @Override
-    public void clean(MediaRef media) {
-    }
-
-    @Override
-    public void purge() {
-    }
-  }
-
-  private static final class TrackingPublisher implements Publisher {
-
-    private final AtomicInteger published = new AtomicInteger();
-
-    @Override
-    public String getName() {
-      return "tracking_publisher";
-    }
-
-    @Override
-    public PublishRef publish(MediaRef media) {
-      published.incrementAndGet();
-      return new PublishRef(media.id(), null);
-    }
-  }
-
-  private static final class ThrowingPublisher implements Publisher {
-
-    @Override
-    public String getName() {
-      return "throwing_publisher";
-    }
-
-    @Override
-    public PublishRef publish(MediaRef media) {
-      throw new RuntimeException("publish failed");
-    }
-  }
-
   private static final class TrackingHistory implements History {
 
     private final AtomicInteger claimed = new AtomicInteger();
@@ -1056,6 +987,177 @@ public class RunnerTest {
 
     @Override
     public void fail(String id, String runner, String error) {
+    }
+  }
+
+  private static final class ThrowingDownloader implements Downloader {
+
+    @Override
+    public String getName() {
+      return "throwing_downloader";
+    }
+
+    @Override
+    public MediaRef download(ClipRef clip, Path target) {
+      throw new RuntimeException("download failed");
+    }
+  }
+
+  private static final class NoOpDownloader implements Downloader {
+
+    @Override
+    public String getName() {
+      return "no_op_downloader";
+    }
+
+    @Override
+    public MediaRef download(ClipRef clip, Path target) {
+      return new MediaRef(clip.id(), target, null, null, null, null, null);
+    }
+  }
+
+  private static final class ThrowingTransformer implements Transformer {
+
+    @Override
+    public String getName() {
+      return "throwing_transformer";
+    }
+
+    @Override
+    public MediaRef transform(MediaRef media) {
+      throw new RuntimeException("transform failed");
+    }
+  }
+
+  private static final class TrackingStager implements Stager {
+
+    private final AtomicInteger purged = new AtomicInteger();
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void stop() {
+    }
+
+    @Override
+    public String getName() {
+      return "tracking_stager";
+    }
+
+    @Override
+    public MediaRef stage(MediaRef media) {
+      return media;
+    }
+
+    @Override
+    public void clean(MediaRef media) {
+    }
+
+    @Override
+    public void purge() {
+      purged.incrementAndGet();
+    }
+  }
+
+  private static final class ThrowingStager implements Stager {
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void stop() {
+    }
+
+    @Override
+    public String getName() {
+      return "throwing_stager";
+    }
+
+    @Override
+    public MediaRef stage(MediaRef media) {
+      throw new RuntimeException("stage failed");
+    }
+
+    @Override
+    public void clean(MediaRef media) {
+    }
+
+    @Override
+    public void purge() {
+    }
+  }
+
+  private static final class NoOpStager implements Stager {
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void stop() {
+    }
+
+    @Override
+    public String getName() {
+      return "no_op_stager";
+    }
+
+    @Override
+    public MediaRef stage(MediaRef media) {
+      return media;
+    }
+
+    @Override
+    public void clean(MediaRef media) {
+    }
+
+    @Override
+    public void purge() {
+    }
+  }
+
+  private static final class TrackingPublisher implements Publisher {
+
+    private final AtomicInteger published = new AtomicInteger();
+
+    @Override
+    public String getName() {
+      return "tracking_publisher";
+    }
+
+    @Override
+    public PublishRef publish(MediaRef media) {
+      published.incrementAndGet();
+      return new PublishRef(media.id(), null);
+    }
+  }
+
+  private static final class ThrowingPublisher implements Publisher {
+
+    @Override
+    public String getName() {
+      return "throwing_publisher";
+    }
+
+    @Override
+    public PublishRef publish(MediaRef media) {
+      throw new RuntimeException("publish failed");
+    }
+  }
+
+  private static final class NoOpPublisher implements Publisher {
+
+    @Override
+    public String getName() {
+      return "no_op_publisher";
+    }
+
+    @Override
+    public PublishRef publish(MediaRef media) {
+      return new PublishRef(media.id(), null);
     }
   }
 }

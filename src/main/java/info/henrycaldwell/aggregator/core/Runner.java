@@ -1,6 +1,9 @@
 package info.henrycaldwell.aggregator.core;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
@@ -111,6 +114,24 @@ public final class Runner {
         context.stager().start();
         LOG.info("Started stager (runner={}, stager={})",
             context.name(), context.stager().getName());
+
+        context.stager().purge();
+        LOG.info("Purged stager directory (runner={}, stager={})",
+            context.name(), context.stager().getName());
+      }
+
+      if (Files.isDirectory(context.workDir())) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(context.workDir())) {
+          for (Path entry : stream) {
+            if (Files.isRegularFile(entry)) {
+              Files.delete(entry);
+            }
+          }
+        } catch (IOException e) {
+          LOG.warn("Failed to purge work directory (runner={}, workDir={})", context.name(), context.workDir(), e);
+        }
+
+        LOG.info("Purged work directory (runner={}, workDir={})", context.name(), context.workDir());
       }
 
       LOG.info("Starting run (runner={}, posts={})", context.name(), context.posts());
