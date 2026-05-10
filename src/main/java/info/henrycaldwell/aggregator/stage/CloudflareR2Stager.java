@@ -197,21 +197,21 @@ public final class CloudflareR2Stager extends AbstractStager {
     URI uri = media.uri();
 
     if (uri == null) {
-      throw new ComponentException(name, "Staged media URI missing", MapUtils.ofNullable("clipId", media.id()));
+      throw new ComponentException(name, "Staged media URI missing", MapUtils.ofNullable("clipId", media.clip().id()));
     }
 
     String path = uri.getPath();
 
     if (path == null || path.isBlank()) {
       throw new ComponentException(name, "Staged media URI path missing",
-          MapUtils.ofNullable("clipId", media.id(), "uri", uri.toString()));
+          MapUtils.ofNullable("clipId", media.clip().id(), "uri", uri.toString()));
     }
 
     String key = path.startsWith("/") ? path.substring(1) : path;
 
     if (key.isBlank()) {
       throw new ComponentException(name, "Staged media URI object key empty",
-          MapUtils.ofNullable("clipId", media.id(), "uri", uri.toString()));
+          MapUtils.ofNullable("clipId", media.clip().id(), "uri", uri.toString()));
     }
 
     try {

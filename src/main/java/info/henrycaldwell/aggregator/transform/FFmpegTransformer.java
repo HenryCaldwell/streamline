@@ -78,12 +78,12 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
   protected final void preflight(MediaRef media, Path source, Path target) {
     if (source == null || !Files.isRegularFile(source)) {
       throw new ComponentException(name, "Input file missing or not a regular file",
-          MapUtils.ofNullable("clipId", media.id(), "sourcePath", source));
+          MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source));
     }
 
     if (target == null) {
       throw new ComponentException(name, "Target path is null",
-          MapUtils.ofNullable("clipId", media.id(), "targetPath", target));
+          MapUtils.ofNullable("clipId", media.clip().id(), "targetPath", target));
     }
 
     Path parent = target.getParent();
@@ -92,14 +92,14 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
         Files.createDirectories(parent);
       } catch (IOException e) {
         throw new ComponentException(name, "Failed to create parent directories",
-            MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target, "parentPath", parent),
+            MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target, "parentPath", parent),
             e);
       }
     }
 
     if (Files.exists(target)) {
       throw new ComponentException(name, "Target file already exists",
-          MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target));
+          MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target));
     }
   }
 
@@ -120,7 +120,7 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
       process = factory.start(pb);
     } catch (IOException e) {
       throw new ComponentException(name, "Failed to start ffmpeg process", MapUtils.ofNullable("ffmpegPath", ffmpegPath,
-          "clipId", media.id(), "sourcePath", source, "targetPath", target), e);
+          "clipId", media.clip().id(), "sourcePath", source, "targetPath", target), e);
     }
 
     boolean complete;
@@ -130,19 +130,19 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
       Thread.currentThread().interrupt();
       process.destroyForcibly();
       throw new ComponentException(name, "Interrupted while waiting for ffmpeg process", MapUtils
-          .ofNullable("ffmpegPath", ffmpegPath, "clipId", media.id(), "sourcePath", source, "targetPath", target), e);
+          .ofNullable("ffmpegPath", ffmpegPath, "clipId", media.clip().id(), "sourcePath", source, "targetPath", target), e);
     }
 
     if (!complete) {
       process.destroyForcibly();
       throw new ComponentException(name, "Timed out while waiting for ffmpeg process", MapUtils.ofNullable("ffmpegPath",
-          ffmpegPath, "clipId", media.id(), "sourcePath", source, "targetPath", target, "timeout", timeout));
+          ffmpegPath, "clipId", media.clip().id(), "sourcePath", source, "targetPath", target, "timeout", timeout));
     }
 
     int code = process.exitValue();
     if (code != 0) {
       throw new ComponentException(name, "ffmpeg process exited with non-zero code", MapUtils.ofNullable("ffmpegPath",
-          ffmpegPath, "clipId", media.id(), "sourcePath", source, "targetPath", target, "exitCode", code));
+          ffmpegPath, "clipId", media.clip().id(), "sourcePath", source, "targetPath", target, "exitCode", code));
     }
   }
 
@@ -157,7 +157,7 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
   protected final void postflight(MediaRef media, Path source, Path target) {
     if (!Files.exists(target)) {
       throw new ComponentException(name, "Output file missing after transform",
-          MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target));
+          MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target));
     }
 
     try {
@@ -165,11 +165,11 @@ public abstract class FFmpegTransformer extends AbstractTransformer {
 
       if (size <= 0) {
         throw new ComponentException(name, "Output file empty after transform",
-            MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target, "sizeBytes", size));
+            MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target, "sizeBytes", size));
       }
     } catch (IOException e) {
       throw new ComponentException(name, "Failed to stat output file",
-          MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target), e);
+          MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target), e);
     }
   }
 }

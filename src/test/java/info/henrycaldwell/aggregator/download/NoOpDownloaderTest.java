@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.util.List;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,9 +55,9 @@ public class NoOpDownloaderTest {
   class Download {
 
     @Test
-    void returnsMediaRefWithTargetPath() {
+    void returnsMediaRefOnSuccess() {
       Path target = tempDir.resolve("clip.mp4");
-      ClipRef clip = new ClipRef("clip-1", "https://example.com/clip-1", "Title", "Broadcaster", "en", 0, List.of("tag"));
+      ClipRef clip = new ClipRef("clip-1", "https://example.com/clip-1", "Title", "Broadcaster", "en", 0, null);
       Config config = ConfigFactory.parseString("""
           name = downloader
           type = no_op
@@ -67,12 +66,8 @@ public class NoOpDownloaderTest {
 
       MediaRef result = downloader.download(clip, target);
 
-      assertEquals("clip-1", result.id());
+      assertEquals(clip, result.clip());
       assertEquals(target, result.file());
-      assertEquals("Title", result.title());
-      assertEquals("Broadcaster", result.broadcaster());
-      assertEquals("en", result.language());
-      assertEquals(List.of("tag"), result.tags());
     }
   }
 }

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
@@ -852,7 +853,7 @@ public class TitleTransformerTest {
       Files.writeString(source, "data");
       Path target = PathUtils.deriveOut(source, "-temp.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, "Title", null, null, 0, null), source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = title
@@ -879,7 +880,7 @@ public class TitleTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, null, "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, null, null, null, 0, null), source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = title
@@ -901,7 +902,7 @@ public class TitleTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, " ", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, " ", null, null, 0, null), source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = title
@@ -923,7 +924,7 @@ public class TitleTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "\uD83D\uDE00", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, "\uD83D\uDE00", null, null, 0, null), source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = title

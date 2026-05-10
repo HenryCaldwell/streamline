@@ -106,7 +106,7 @@ public class AbstractTransformerTest {
       Files.writeString(source, "source");
       Files.writeString(output, "output");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       MediaRef applied = media.withFile(output);
       Config config = ConfigFactory.parseString("""
           name = transformer
@@ -126,7 +126,7 @@ public class AbstractTransformerTest {
       Path output = tempDir.resolve("output.mp4");
       Files.writeString(output, "output");
 
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -145,7 +145,7 @@ public class AbstractTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -164,7 +164,7 @@ public class AbstractTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -184,7 +184,7 @@ public class AbstractTransformerTest {
       Path output = tempDir.resolve("output.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -204,7 +204,7 @@ public class AbstractTransformerTest {
       Files.writeString(source, "source");
       Files.createDirectory(output);
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test

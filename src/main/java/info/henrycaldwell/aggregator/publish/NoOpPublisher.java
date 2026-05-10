@@ -33,6 +33,6 @@ public final class NoOpPublisher extends AbstractPublisher {
    */
   @Override
   public PublishRef publish(MediaRef media) {
-    return new PublishRef(media.id(), null);
+    return new PublishRef(media.clip().id(), null);
   }
 }

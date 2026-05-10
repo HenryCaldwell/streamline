@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.core.PublishRef;
 import info.henrycaldwell.aggregator.error.SpecException;
@@ -50,7 +51,7 @@ public class NoOpPublisherTest {
 
     @Test
     void returnsPublishRefWithNullUri() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, null, null, null, 0, null), null, null);
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = no_op

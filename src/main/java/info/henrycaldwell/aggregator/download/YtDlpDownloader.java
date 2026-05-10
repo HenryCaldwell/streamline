@@ -3,7 +3,6 @@ package info.henrycaldwell.aggregator.download;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.typesafe.config.Config;
@@ -143,14 +142,7 @@ public final class YtDlpDownloader extends AbstractDownloader {
       throw new ComponentException(name, "Failed to stat output file", MapUtils.ofNullable("targetPath", target), e);
     }
 
-    return new MediaRef(
-        clip.id(),
-        target,
-        null,
-        clip.title(),
-        clip.broadcaster(),
-        clip.language(),
-        clip.tags() != null ? List.copyOf(clip.tags()) : null);
+    return new MediaRef(clip, target, null);
   }
 
   /**

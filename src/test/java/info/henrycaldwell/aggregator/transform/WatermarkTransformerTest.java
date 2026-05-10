@@ -16,12 +16,15 @@ import org.junit.jupiter.api.io.TempDir;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.util.PathUtils;
 
 public class WatermarkTransformerTest {
+
+  private static final ClipRef CLIP = new ClipRef("clip-1", null, null, "Broadcaster", null, 0, null);
 
   @TempDir
   Path tempDir;
@@ -601,7 +604,7 @@ public class WatermarkTransformerTest {
       Files.writeString(source, "data");
       Path target = PathUtils.deriveOut(source, "-temp.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = watermark
@@ -627,7 +630,7 @@ public class WatermarkTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", null, "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, null, null, null, 0, null), source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = watermark
@@ -648,7 +651,7 @@ public class WatermarkTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", " ", "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, null, " ", null, 0, null), source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = watermark
@@ -669,7 +672,7 @@ public class WatermarkTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "\uD83D\uDE00", "en", null);
+      MediaRef media = new MediaRef(new ClipRef("clip-1", null, null, "\uD83D\uDE00", null, 0, null), source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = watermark
@@ -691,7 +694,7 @@ public class WatermarkTransformerTest {
       Path logo = tempDir.resolve("logo.png");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = watermark
@@ -715,7 +718,7 @@ public class WatermarkTransformerTest {
       Files.writeString(source, "source");
       Files.createDirectory(logo);
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = watermark

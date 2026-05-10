@@ -1077,7 +1077,7 @@ public class RunnerTest {
 
     @Override
     public MediaRef download(ClipRef clip, Path target) {
-      return new MediaRef(clip.id(), target, null, null, null, null, null);
+      return new MediaRef(clip, target, null);
     }
   }
 
@@ -1196,7 +1196,7 @@ public class RunnerTest {
     @Override
     public PublishRef publish(MediaRef media) {
       published.incrementAndGet();
-      return new PublishRef(media.id(), null);
+      return new PublishRef(media.clip().id(), null);
     }
   }
 
@@ -1238,7 +1238,7 @@ public class RunnerTest {
 
     @Override
     public PublishRef publish(MediaRef media) {
-      return new PublishRef(media.id(), null);
+      return new PublishRef(media.clip().id(), null);
     }
   }
 }

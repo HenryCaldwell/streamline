@@ -147,11 +147,8 @@ public class YtDlpDownloaderTest {
 
       MediaRef result = assertDoesNotThrow(() -> downloader.download(clip, target));
 
-      assertEquals("clip-1", result.id());
+      assertEquals(clip, result.clip());
       assertEquals(target, result.file());
-      assertEquals("Title", result.title());
-      assertEquals("Broadcaster", result.broadcaster());
-      assertEquals("en", result.language());
     }
 
     @Test

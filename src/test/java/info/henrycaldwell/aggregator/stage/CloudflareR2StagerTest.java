@@ -21,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
@@ -337,7 +338,7 @@ public class CloudflareR2StagerTest {
       CloudflareR2Stager stager = new CloudflareR2Stager(config);
       stager.start();
 
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       ComponentException exception = assertThrows(ComponentException.class, () -> stager.apply(media));
 
       assertTrue(exception.getMessage().contains("Input file missing or not a regular file"));
@@ -383,7 +384,7 @@ public class CloudflareR2StagerTest {
       stager.start();
       stager.stop();
 
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       ComponentException exception = assertThrows(ComponentException.class, () -> stager.apply(media));
 
       assertTrue(exception.getMessage().contains("Stager not started"));
@@ -414,7 +415,7 @@ public class CloudflareR2StagerTest {
       Path source = tempDir.resolve("clip.mp4");
       Files.writeString(source, "data");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -452,7 +453,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenNotStarted() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -471,7 +472,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenSourceIsNull() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -510,7 +511,7 @@ public class CloudflareR2StagerTest {
     void throwsWhenSourceIsMissing() {
       Path source = tempDir.resolve("nonexistent.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -551,7 +552,7 @@ public class CloudflareR2StagerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.createDirectory(source);
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -592,7 +593,7 @@ public class CloudflareR2StagerTest {
       Path source = tempDir.resolve("clip.mp4");
       Files.writeString(source, "data");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -636,8 +637,7 @@ public class CloudflareR2StagerTest {
     void deletesObjectOnSuccess() {
       boolean[] deleted = { false };
 
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/clip.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, URI.create("https://cdn.example.com/clip.mp4"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -675,7 +675,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenUriIsNull() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -712,8 +712,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenUriPathIsBlank() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com"), "Title", "Broadcaster",
-          "en", null);
+      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, URI.create("https://cdn.example.com"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -750,8 +749,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenUriObjectKeyIsEmpty() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/"), "Title", "Broadcaster",
-          "en", null);
+      MediaRef media = new MediaRef(new ClipRef(null, null, null, null, null, 0, null), null, URI.create("https://cdn.example.com/"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -788,8 +786,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenNotStarted() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/clip.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, URI.create("https://cdn.example.com/clip.mp4"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2
@@ -808,8 +805,7 @@ public class CloudflareR2StagerTest {
 
     @Test
     void throwsWhenDeleteFails() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/clip.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, URI.create("https://cdn.example.com/clip.mp4"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = cloudflare-r2

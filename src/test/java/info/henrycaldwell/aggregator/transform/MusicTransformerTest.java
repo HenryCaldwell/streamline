@@ -232,7 +232,7 @@ public class MusicTransformerTest {
       Files.writeString(music, "data");
       Path target = PathUtils.deriveOut(source, "-music.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = music
@@ -259,7 +259,7 @@ public class MusicTransformerTest {
       Path music = tempDir.resolve("music.mp3");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = music
@@ -281,7 +281,7 @@ public class MusicTransformerTest {
       Files.writeString(source, "source");
       Files.createDirectory(music);
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = music

@@ -49,7 +49,7 @@ public class NoOpStagerTest {
 
     @Test
     void returnsMediaUnchanged() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = no_op
@@ -67,7 +67,7 @@ public class NoOpStagerTest {
 
     @Test
     void returnsMediaUnchanged() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = no_op

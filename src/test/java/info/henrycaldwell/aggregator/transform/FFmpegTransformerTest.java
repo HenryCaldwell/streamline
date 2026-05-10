@@ -19,11 +19,14 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
 import info.henrycaldwell.aggregator.config.Spec;
+import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
 
 public class FFmpegTransformerTest {
+
+  private static final ClipRef CLIP = new ClipRef("clip-1", null, null, null, null, 0, null);
 
   @TempDir
   Path tempDir;
@@ -135,7 +138,7 @@ public class FFmpegTransformerTest {
     void throwsWhenSourceIsNull() {
       Path target = tempDir.resolve("target.mp4");
 
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -156,7 +159,7 @@ public class FFmpegTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -177,7 +180,7 @@ public class FFmpegTransformerTest {
       Path target = tempDir.resolve("target.mp4");
       Files.createDirectory(source);
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -197,7 +200,7 @@ public class FFmpegTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -218,7 +221,7 @@ public class FFmpegTransformerTest {
       Path target = tempDir.resolve("nested").resolve("target.mp4");
 
       Files.writeString(source, "source");
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -239,7 +242,7 @@ public class FFmpegTransformerTest {
       Files.writeString(source, "source");
       Files.writeString(target, "target");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -263,7 +266,7 @@ public class FFmpegTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -279,7 +282,7 @@ public class FFmpegTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -299,7 +302,7 @@ public class FFmpegTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -324,7 +327,7 @@ public class FFmpegTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -348,7 +351,7 @@ public class FFmpegTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Path target = tempDir.resolve("target.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -369,7 +372,7 @@ public class FFmpegTransformerTest {
       Path target = tempDir.resolve("target.mp4");
       Files.writeString(target, "");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test
@@ -390,7 +393,7 @@ public class FFmpegTransformerTest {
       Path target = tempDir.resolve("target.mp4");
       Files.writeString(target, "output");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = test

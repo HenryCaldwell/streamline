@@ -189,9 +189,9 @@ public final class TitleTransformer extends FFmpegTransformer {
 
     preflight(media, source, target);
 
-    String rawTitle = media.title();
+    String rawTitle = media.clip().title();
     if (rawTitle == null || rawTitle.isBlank()) {
-      throw new ComponentException(name, "Title missing", MapUtils.ofNullable("clipId", media.id(), "title", rawTitle));
+      throw new ComponentException(name, "Title missing", MapUtils.ofNullable("clipId", media.clip().id(), "title", rawTitle));
     }
 
     String safeTitle = TextUtils.filterCharacters(rawTitle);
@@ -200,7 +200,7 @@ public final class TitleTransformer extends FFmpegTransformer {
         maxLines);
     if (caption.isBlank()) {
       throw new ComponentException(name, "Title empty after formatting",
-          MapUtils.ofNullable("clipId", media.id(), "title", rawTitle, "formattedTitle", caption));
+          MapUtils.ofNullable("clipId", media.clip().id(), "title", rawTitle, "formattedTitle", caption));
     }
 
     Path captionFile = null;
@@ -208,7 +208,7 @@ public final class TitleTransformer extends FFmpegTransformer {
       Path directory = target.toAbsolutePath().getParent();
       if (directory == null) {
         throw new ComponentException(name, "Failed to determine caption temporary directory",
-            MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target));
+            MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target));
       }
 
       captionFile = Files.createTempFile(directory, "caption-", ".txt");
@@ -235,7 +235,7 @@ public final class TitleTransformer extends FFmpegTransformer {
 
     } catch (IOException e) {
       throw new ComponentException(name, "Failed to write caption temp file",
-          MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target), e);
+          MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target), e);
     } finally {
       if (captionFile != null) {
         try {

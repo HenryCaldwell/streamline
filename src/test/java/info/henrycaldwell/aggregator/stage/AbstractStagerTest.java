@@ -135,7 +135,7 @@ public class AbstractStagerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       MediaRef staged = media.withUri(URI.create("https://example.com/source.mp4")).withFile(null);
       Config config = ConfigFactory.parseString("""
           name = stager
@@ -151,7 +151,7 @@ public class AbstractStagerTest {
 
     @Test
     void returnsStagedMediaWhenSourceFileIsNull() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, null);
       MediaRef staged = media.withUri(URI.create("https://example.com/source.mp4"));
       Config config = ConfigFactory.parseString("""
           name = stager
@@ -168,7 +168,7 @@ public class AbstractStagerTest {
     void throwsWhenApplyReturnsNullUri() {
       Path source = tempDir.resolve("source.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = test
@@ -185,7 +185,7 @@ public class AbstractStagerTest {
     void throwsWhenApplyReturnsNonHttpUri() {
       Path source = tempDir.resolve("source.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = stager
           type = test
@@ -204,8 +204,7 @@ public class AbstractStagerTest {
 
     @Test
     void doesNothingByDefault() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://example.com/source.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, null, URI.create("https://example.com/source.mp4"));
       Config config = ConfigFactory.parseString("""
           name = stager
           type = test

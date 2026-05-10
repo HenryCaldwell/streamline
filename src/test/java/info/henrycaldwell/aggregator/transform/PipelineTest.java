@@ -15,14 +15,7 @@ import info.henrycaldwell.aggregator.core.MediaRef;
 
 public class PipelineTest {
 
-  private static final MediaRef MEDIA = new MediaRef(
-      "clip-1",
-      Path.of("input.mp4"),
-      null,
-      "Title",
-      "Broadcaster",
-      "en",
-      null);
+  private static final MediaRef MEDIA = new MediaRef(null, Path.of("input.mp4"), null);
 
   @Nested
   class GetName {

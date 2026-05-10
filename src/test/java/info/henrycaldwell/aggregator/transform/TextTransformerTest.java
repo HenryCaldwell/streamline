@@ -16,12 +16,15 @@ import org.junit.jupiter.api.io.TempDir;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
 import info.henrycaldwell.aggregator.util.PathUtils;
 
 public class TextTransformerTest {
+
+  private static final ClipRef CLIP = new ClipRef("clip-1", null, null, null, null, 0, null);
 
   @TempDir
   Path tempDir;
@@ -968,7 +971,7 @@ public class TextTransformerTest {
       Files.writeString(source, "data");
       Path target = PathUtils.deriveOut(source, "-temp.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = text
@@ -996,7 +999,7 @@ public class TextTransformerTest {
       Path source = tempDir.resolve("source.mp4");
       Files.writeString(source, "source");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = text

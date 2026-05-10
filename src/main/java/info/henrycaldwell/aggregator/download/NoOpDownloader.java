@@ -35,6 +35,6 @@ public final class NoOpDownloader extends AbstractDownloader {
    */
   @Override
   public MediaRef download(ClipRef clip, Path target) {
-    return new MediaRef(clip.id(), target, null, clip.title(), clip.broadcaster(), clip.language(), clip.tags());
+    return new MediaRef(clip, target, null);
   }
 }

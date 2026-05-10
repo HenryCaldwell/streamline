@@ -21,7 +21,7 @@ import info.henrycaldwell.aggregator.publish.Publisher;
 public final class PublisherWorkerPool {
 
   private static final Logger LOG = LoggerFactory.getLogger(PublisherWorkerPool.class);
-  private static final MediaRef SENTINEL = new MediaRef("SENTINEL", null, null, null, null, null, null);
+  private static final MediaRef SENTINEL = new MediaRef(null, null, null);
 
   private final RunnerContext context;
   private final LinkedBlockingQueue<MediaRef> queue;
@@ -143,7 +143,7 @@ public final class PublisherWorkerPool {
 
       pending.incrementAndGet();
 
-      String clipId = media.id();
+      String clipId = media.clip().id();
       boolean success = false;
 
       for (Publisher publisher : context.publishers().values()) {
@@ -192,7 +192,7 @@ public final class PublisherWorkerPool {
    * @param media A {@link MediaRef} representing the media to clean.
    */
   private void clean(MediaRef media) {
-    String clipId = media.id();
+    String clipId = media.clip().id();
 
     if (context.stager() == null) {
       Path file = media.file();

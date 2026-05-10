@@ -154,21 +154,21 @@ public final class WatermarkTransformer extends FFmpegTransformer {
 
     preflight(media, source, target);
 
-    String rawBroadcaster = media.broadcaster();
+    String rawBroadcaster = media.clip().broadcaster();
     if (rawBroadcaster == null || rawBroadcaster.isBlank()) {
       throw new ComponentException(name, "Broadcaster name missing",
-          MapUtils.ofNullable("clipId", media.id(), "broadcaster", rawBroadcaster));
+          MapUtils.ofNullable("clipId", media.clip().id(), "broadcaster", rawBroadcaster));
     }
 
     String broadcaster = TextUtils.filterCharacters(rawBroadcaster);
     if (broadcaster.isBlank()) {
       throw new ComponentException(name, "Broadcaster name empty after filtering",
-          MapUtils.ofNullable("clipId", media.id(), "broadcaster", rawBroadcaster));
+          MapUtils.ofNullable("clipId", media.clip().id(), "broadcaster", rawBroadcaster));
     }
 
     if (logoPath != null && !Files.isRegularFile(Path.of(logoPath))) {
       throw new ComponentException(name, "Logo file missing or not a regular file",
-          MapUtils.ofNullable("clipId", media.id(), "logoPath", logoPath));
+          MapUtils.ofNullable("clipId", media.clip().id(), "logoPath", logoPath));
     }
 
     Path broadcasterFile = null;
@@ -176,7 +176,7 @@ public final class WatermarkTransformer extends FFmpegTransformer {
       Path directory = target.toAbsolutePath().getParent();
       if (directory == null) {
         throw new ComponentException(name, "Failed to determine broadcaster label temporary directory",
-            MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target));
+            MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target));
       }
 
       broadcasterFile = Files.createTempFile(directory, "broadcaster-", ".txt");
@@ -214,7 +214,7 @@ public final class WatermarkTransformer extends FFmpegTransformer {
       return media.withFile(target);
     } catch (IOException e) {
       throw new ComponentException(name, "Failed to write broadcaster label temp file",
-          MapUtils.ofNullable("clipId", media.id(), "sourcePath", source, "targetPath", target), e);
+          MapUtils.ofNullable("clipId", media.clip().id(), "sourcePath", source, "targetPath", target), e);
     } finally {
       if (broadcasterFile != null) {
         try {

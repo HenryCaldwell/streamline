@@ -13,12 +13,15 @@ import org.junit.jupiter.api.Test;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
+import info.henrycaldwell.aggregator.core.ClipRef;
 import info.henrycaldwell.aggregator.core.MediaRef;
 import info.henrycaldwell.aggregator.core.PublishRef;
 import info.henrycaldwell.aggregator.error.ComponentException;
 import info.henrycaldwell.aggregator.error.SpecException;
 
 public class InstagramPublisherTest {
+
+  private static final ClipRef CLIP = new ClipRef("clip-1", null, null, null, null, 0, null);
 
   @Nested
   class Constructor {
@@ -236,8 +239,7 @@ public class InstagramPublisherTest {
 
     @Test
     void returnsPublishRefOnSuccess() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -261,7 +263,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenMediaUriIsNull() {
-      MediaRef media = new MediaRef("clip-1", null, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, null);
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -279,8 +281,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenMediaUriSchemeIsNotHttp() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("ftp://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("ftp://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -298,8 +299,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenApiFails() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -316,8 +316,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsOnInvalidJson() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -334,8 +333,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenContainerCreationReturnsNoId() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -352,8 +350,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsOnInvalidJsonDuringStatusCheck() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -374,8 +371,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenContainerStatusIsMissing() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -396,8 +392,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenContainerStatusEntersErrorState() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -419,8 +414,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenContainerTimesOut() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -444,8 +438,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsOnInvalidJsonDuringPublish() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -467,8 +460,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenPublishReturnsNoId() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -490,8 +482,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsOnInvalidJsonDuringPermalinkFetch() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram
@@ -514,8 +505,7 @@ public class InstagramPublisherTest {
 
     @Test
     void throwsWhenPermalinkIsMissing() {
-      MediaRef media = new MediaRef("clip-1", null, URI.create("https://cdn.example.com/video.mp4"), "Title",
-          "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(CLIP, null, URI.create("https://cdn.example.com/video.mp4"));
       Config config = ConfigFactory.parseString("""
           name = publisher
           type = instagram

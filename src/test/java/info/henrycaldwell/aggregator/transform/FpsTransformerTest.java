@@ -108,7 +108,7 @@ public class FpsTransformerTest {
       Files.writeString(source, "data");
       Path target = PathUtils.deriveOut(source, "-temp.mp4");
 
-      MediaRef media = new MediaRef("clip-1", source, null, "Title", "Broadcaster", "en", null);
+      MediaRef media = new MediaRef(null, source, null);
       Config config = ConfigFactory.parseString("""
           name = transformer
           type = fps

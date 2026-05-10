@@ -2,7 +2,6 @@ package info.henrycaldwell.aggregator.core;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.List;
 
 /**
  * Record for referencing a media artifact.
@@ -11,13 +10,9 @@ import java.util.List;
  * that operate on media.
  */
 public record MediaRef(
-    String id,
+    ClipRef clip,
     Path file,
-    URI uri,
-    String title,
-    String broadcaster,
-    String language,
-    List<String> tags) {
+    URI uri) {
 
   /**
    * Returns a new {@link MediaRef} with an updated file path.
@@ -26,7 +21,7 @@ public record MediaRef(
    * @return A {@link MediaRef} representing the updated artifact.
    */
   public MediaRef withFile(Path file) {
-    return new MediaRef(id, file, uri, title, broadcaster, language, tags);
+    return new MediaRef(clip, file, uri);
   }
 
   /**
@@ -36,16 +31,6 @@ public record MediaRef(
    * @return A {@link MediaRef} representing the updated artifact.
    */
   public MediaRef withUri(URI uri) {
-    return new MediaRef(id, file, uri, title, broadcaster, language, tags);
-  }
-
-  /**
-   * Returns a new {@link MediaRef} with updated tags.
-   *
-   * @param tags A {@link List} of strings representing the updated tags.
-   * @return A {@link MediaRef} representing the updated artifact.
-   */
-  public MediaRef withTags(List<String> tags) {
-    return new MediaRef(id, file, uri, title, broadcaster, language, tags);
+    return new MediaRef(clip, file, uri);
   }
 }

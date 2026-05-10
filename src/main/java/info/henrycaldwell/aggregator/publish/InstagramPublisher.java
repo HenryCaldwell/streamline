@@ -101,7 +101,7 @@ public final class InstagramPublisher extends AbstractPublisher {
     if (uri == null || uri.getScheme() == null
         || (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme()))) {
       throw new ComponentException(name, "Media URI missing or not HTTP(S)",
-          MapUtils.ofNullable("uri", uri, "mediaId", media.id()));
+          MapUtils.ofNullable("uri", uri, "mediaId", media.clip().id()));
     }
 
     String url = uri.toString();
@@ -301,8 +301,8 @@ public final class InstagramPublisher extends AbstractPublisher {
    * @return A string representing the Instagram caption.
    */
   private String buildCaption(MediaRef media) {
-    String broadcaster = media.broadcaster();
-    String title = media.title();
+    String broadcaster = media.clip().broadcaster();
+    String title = media.clip().title();
 
     StringBuilder sb = new StringBuilder();
     sb.append(broadcaster != null ? broadcaster : "N/A")
@@ -313,11 +313,11 @@ public final class InstagramPublisher extends AbstractPublisher {
       sb.append("\n\n").append(captionText);
     }
 
-    if (media.tags() != null && !media.tags().isEmpty()) {
+    if (media.clip().tags() != null && !media.clip().tags().isEmpty()) {
       sb.append("\n\n");
 
       boolean first = true;
-      for (String tag : media.tags()) {
+      for (String tag : media.clip().tags()) {
         if (tag == null || tag.isBlank()) {
           continue;
         }
